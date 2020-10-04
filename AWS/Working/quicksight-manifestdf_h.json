@@ -1,0 +1,15 @@
+{
+   "fileLocations": [
+      {
+         "URIs": [
+                       "https://s3.amazonaws.com/mogrepswrk/df_h15.csv"
+
+         ]
+      },
+   ],
+   "globalUploadSettings": {
+      "format": "CSV",
+      "delimiter": ",",
+      "containsHeader": "true"
+   }
+}
