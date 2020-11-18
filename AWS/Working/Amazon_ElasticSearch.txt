@@ -1,0 +1,17 @@
+reference link : https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/es-gsg-upload-data.html
+
+Services > elasticsearch service
+--create elasticsearch domain
+  Deployment type : Development and testing
+  Elasticsearch version : 7.1
+  Elasticseach domain name : mysimpliclasstest
+  Instance type : r5.large.elasticsearch(default)
+  No of nodes : 1
+Let othr settings be default > Next
+ Configure access and security : choose your VPC, aubnet, SG
+ Fine grained access control : disabled as of now
+ Domain access policy : Allow open access to domain
+ encryption : disabled as of now
+ Confirm
+
+Follow instructions on link to add data to ES index.

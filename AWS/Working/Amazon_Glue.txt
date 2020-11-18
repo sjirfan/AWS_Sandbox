@@ -1,0 +1,79 @@
+--Create a bucket in s3 >Load sample data in a S3 bucket : newtick
+--Create another bucket for output : newtickout
+--Services > AWS Glue > create crawler > newtickcrawler
+  crawler name : newtickcrawler
+  crawler source type: data stores
+  choose a data store : s3 - include path : s3://newtick
+  Add another data store : no
+  Choose an IAM role : choose / create a role that allows aws to access s3
+  Frequency : Run on Demand 
+  configure the crawler's output : Database : newdata
+  Grouping behaviour : none (we can choose Create a single schema for each S3 path)
+  Configuration options (optional)
+  During the crawler run, all schema changes are logged.
+  When the crawler detects schema changes in the data store, how should AWS Glue handle table updates in the data catalog?
+  >Update the table definition in the data catalog-YES
+  Add new columns only-NO
+  >Ignore the change and don't update the table in the data catalog-NO
+  Update all new and existing partitions with metadata from the table-NO
+  >How should AWS Glue handle deleted objects in the data store?
+  Delete tables and partitions from the data catalog-NO
+  Ignore the change and don't update the table in the data catalog-NO
+  Mark the table as deprecated in the data catalog-YES
+  FINISH
+
+--Run the crawler
+--Click on databases to check your database
+--Click on Tables in database
+  Clicking on any file would show its :
+                                      details of tables , Input/Output format, delimiter, Table properties & schema
+  Here we can edit schema : 
+  For example :  allevents_pipe_txt
+  Update the schema as per 
+        create table event(
+	eventid integer not null distkey,
+	venueid smallint not null,
+	catid smallint not null,
+	dateid smallint not null sortkey,
+	eventname varchar(200),
+	starttime timestamp);
+
+Under ETL section : Click on Jobs 
+Job name: newtickjob1
+IAM role : choose the role
+Type : Spark (other options can be spark streaming/python shell)
+Glue version : spark 2.4,python 3
+This job runs : Proposed script ( we can provide our own modified script)
+script file name : newtickjob1
+s3 path where script is stored : s3://aws-glue-scripts-789922351583-us-east-1/admin
+temporary directory : s3://aws-glue-temporary-789922351583-us-east-1/admin
+monitoring options : Job metrics / Continous logging / Spark UI
+we will choose spark UI and provide location for spark event logs : s3://newtickout
+Security configuration, script libraries, and job parameters (optional) :
+ We can provide python library path/Dependent jars path /Referenced files path /Worker type/
+ Max capacity : 2
+ Job Timeout : 10 > NEXT
+--choose allevents_pipe_txt > Next
+--change schema
+--choose a data target : use tables in table catalog and update your target data
+  choose allevents_pipe
+--Map the source columns to target columns : 
+  Verify the mappings created by AWS Glue. Change mappings by choosing other columns with Map to target. 
+  You can Clear all mappings and Reset to default AWS Glue mappings. 
+  AWS Glue generates your script with the defined mappings.
+--save job and edit script
+--Now we can choose :
+Action : save as
+         save and add trigger
+         choose triggers for job
+         edit job
+         delete
+Save
+Run job 
+Generate Diagram (shows flow of job on left side)
+--let's save job and go back to Jobs page
+--select the job and run the job
+
+
+
+

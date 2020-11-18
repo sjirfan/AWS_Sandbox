@@ -1,0 +1,132 @@
+AWS Lambda
+------------
+--Is a compute service
+--serverless
+--supports different programming languages
+
+Usage
+--can be used as event driven compute service as a result of some event, (it runs code in response to events)
+--can be used to run your code as a response to HTTP code using amazon api gateway /api calls made via aws sdk
+--1 million requests/month 400,000gb/sec compute time/month for free
+
+Services > lambda > create function (Using Python)
+
+Author from scratch > 
+Function name: testf
+Runtime: python 3.6/3.8
+role : option 1: write logs to cloud watch
+       option 2: write data to s3 or transform data before it is written to s3
+       option 3: access data from s3 etc..
+
+create function
+
+Now looking into function:
+trigger : to invoke lambda function
+destination : choose the destination
+Function code :
+Code entry type
+runtime
+handler
+[if lambda handler changed in code, update it under handler so that aws lambda can launch your function]
+[AWS lambda expects a 'lambda_handler' function which expects two arguments (event and context)
+event : is a an object formed from a json formatted string that presents the action
+context : provided information about invocation, function and execution environment for ur lambda]
+
+Before we edit our code, let's also change basic settings (memory and Timeout)
+memory : function is allocated cpu propertional to memory configured
+timeout: longest amt of time for which function can run for(after which amazon will kill it)
+
+Before we edit our code, we can test the code as it is by creating/configuring a 'test event'
+Eventname: myTestEvent
+{
+}
+
+Now let's edit our code
+---
+import json
+
+def lambda_handler(event, context):
+    num1 = 100
+    num2 = 200
+    res = num1 + num2 
+    return {
+        'statusCode': 200,
+        'body': json.dumps(res)
+    }
+
+---
+or
+---
+import json
+
+def lambda_handler(event, context):
+    num1 = 100
+    num2 = 200
+    res = num1 + num2 
+    return res
+    
+---
+====================
+#Lambda function to list buckets from s3:
+Note** remember to create appropriate role
+import json
+import boto3
+
+s3 = boto3.resource('s3')
+
+def lambda_handler(event, context):
+    bucket_list = []
+    for bucket in s3.buckets.all():
+	print(bucket.name)
+	bucket_list.append(bucket.name)
+    return {
+        'statusCode': 200,
+        'body': bucket_list
+    }
+==================
+#lambda function to get items from dynamodb
+import json
+import boto3
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('usersTest')
+
+def lambda_handler(event, context):
+    response = table.get_item(
+	Key = {
+		'id': '12345'
+	}
+    )
+    print(response)
+    return {
+        'statusCode': 200,
+        'body': response
+    }
+================
+#lambda function to put items from dynamodb 
+#refer : Amazon_DynamoDB_Working
+import json
+import boto3
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('usersTest')
+
+def lambda_handler(event, context):
+    table.put_item(
+	Item = {
+		'id': '1234578',
+                'temp' : 'too hot'
+	}
+    )
+    response = {
+	'message': 'Item added'
+    }
+    return {
+        'statusCode': 200,
+        'body': response
+    }
+=============
+
+
+
+

@@ -1,0 +1,16 @@
+{
+   "fileLocations": [
+      {
+         "URIs": [
+            "https://s3.amazonaws.com/mogrepswrk/df_15.csv",
+	    "https://s3.amazonaws.com/mogrepswrk/df_16.csv",
+	    "https://s3.amazonaws.com/mogrepswrk/df_17.csv"
+         ]
+      },
+   ],
+   "globalUploadSettings": {
+      "format": "CSV",
+      "delimiter": ",",
+      "containsHeader": "true"
+   }
+}

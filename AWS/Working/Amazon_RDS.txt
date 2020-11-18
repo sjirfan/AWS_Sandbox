@@ -1,0 +1,119 @@
+RDS in AWS
+------------
+Create SG (if not existing) and allow inbound rules from your IP Address
+
+Services>RDS>Amazon Arora > create database
+
+Easy create
+Engine type:Amazon Arora
+
+(Amazon Aurora with MySQL 5.6 compatibility)>Dev/Test
+
+Db Cluster identifier>myauroradb
+
+admin
+Abcd1234
+
+View default settings for Easy create
+
+Configuration
+Value
+Editable after database is created
+Database Features	provisioned	No
+Encryption	Enabled	No
+VPC	Default VPC (vpc-81ecf3fb)	No
+Option Group	default:aurora-mysql-5-7	No
+Subnet Group	default-vpc-81ecf3fb	Yes
+Automatic Backups	Enabled	Yes
+VPC Security Group	sg-44471b66	Yes
+Publically Accessible	No	Yes
+Database Port	3306	Yes
+DB Cluster Identifier	myauroradb	Yes
+DB Instance Identifier	database-1	Yes
+DB Parameter Group	default.aurora-mysql5.7	Yes
+DB Cluster Parameter Group	default.aurora-mysql5.7	Yes
+Performance Insights	Enabled	Yes
+Monitoring	Enabled	Yes
+Maintenance	Auto Minor Version Upgrade Enabled	Yes
+Delete Protection	Not Enabled	Yes
+
+--------------
+User: arn:aws:sts::789922351583:assumed-role/Corestack_Role/ajaykuma24_gmail is not authorized to 
+perform: rds:CreateDBInstance on resource: arn:aws:rds:us-east-1:789922351583:db:myauroradb-instance-1 
+with an explicit deny
+-------------
+
+Go for standard create
+Engine Type: Amazon Aurora
+edition:Amazon Aurora with MySQL compatibility
+
+Capacity:
+Provisioned (select)
+You provision and manage the server instance sizes.
+
+Serverless
+You specify the minimum and maximum amount of resources needed, and Aurora scales the 
+capacity based on database load. This is a good option for intermittent or unpredictable workloads.
+
+Replication features
+Single-master replication is currently selected
+
+Engine version
+View the engine versions that support the following database features.
+Show versions that support the global database feature(turned off)
+Show versions that support the parallel query feature(turned off)
+
+Aurora(Mysql 5.7) 2.07.2
+
+Templates: Dev/Test
+
+DB Instance Size
+DB instance class
+Choose a DB instance class that meets your processing power and memory requirements. 
+The DB instance class options below are limited to those supported by the engine you selected above.
+
+Memory Optimized classes (includes r and x classes)[chosen]: db.r5.large
+
+Burstable classes (includes t classes)
+
+Availability & durability
+--Dont create an Aurora Replica
+
+Connectivity
+:Default VPC
+
+Additional connectivity configuration:
+Subnet group: default-vpc-xxxxx
+
+Public access
+
+Yes(choose this)
+Amazon EC2 instances and devices outside the VPC can connect to your database. 
+Choose one or more VPC security groups that specify which EC2 instances and devices inside the VPC 
+can connect to the database.
+
+No
+RDS will not assign a public IP address to the database. Only Amazon EC2 instances and devices 
+inside the VPC can connect to your database.
+
+VPC security groups
+default
+
+Availabiltiy zone : no preference
+
+DB Port:
+3306
+(make sure this is allowed in Security group)
+
+Your request to create DB instance database-1 didn't work.
+User: arn:aws:sts::789922351583:assumed-role/Corestack_Role/ajaykuma24_gmail is not authorized to 
+perform: rds:CreateDBInstance on resource: arn:aws:rds:us-east-1:789922351583:db:database-1-instance-1 
+with an explicit deny.
+
+Problem: Administrator needs to provide access.
+
+Redshift:
+  error:  User arn:aws:redshift:us-east-1:789922351583:dbuser:rscluster1/awsuser 
+is not authorized to assume IAM Role arn:aws:iam::789922351583:role/myredshiftrole2. 
+
+

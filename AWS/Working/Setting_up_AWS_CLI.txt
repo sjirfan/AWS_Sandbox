@@ -1,0 +1,110 @@
+Setting up AWS CLI on windows
+
+Install or update the AWS CLI version 2 on Windows using the MSI installer
+Download the AWS CLI MSI installer for Windows (64-bit) at https://awscli.amazonaws.com/AWSCLIV2.msi.
+
+To update your current installation of AWS CLI version 2 on Windows, 
+download a new installer each time you update to overwrite previous versions. 
+
+After running the installer..
+
+======
+
+C:\Users\Win10>aws --version
+aws-cli/2.0.19 Python/3.7.7 Windows/10 botocore/2.0.0dev23
+C:\>aws configure
+AWS Access Key ID [None]: provide your key id (found in AWS console > IAM > users > select your user id
+AWS Secret Access Key [None]: can be found with ur key id or by downloading the csv file
+Default region name [None]: provide a region
+Default output format [None]: json
+
+or in windows we can set environment variables 
+
+C:\Users\Win10>set AWS_ACCESS_KEY_ID=
+
+C:\Users\Win10>set AWS_SECRET_ACCESS_KEY=
+
+#Specifies an AWS session token used as part of the credentials to authenticate the user. 
+A session token is required only if you manually specify temporary security credentials.
+C:\Users\Win10>set AWS_SESSION_TOKEN=
+
+These details can also be updated in '.aws'> credentials
+
+C:\Users\Win10>dir/p
+ Volume in drive C has no label.
+ Volume Serial Number is B2C3-C385
+
+ Directory of C:\Users\Win10
+
+07/12/2020  02:01 PM    <DIR>          .
+07/12/2020  02:01 PM    <DIR>          ..
+12/02/2019  06:05 PM    <DIR>          .anaconda
+09/10/2019  07:17 PM    <DIR>          .android
+06/07/2020  03:14 PM    <DIR>          .aws
+
+C:\Users\Win10>cd .aws
+
+C:\Users\Win10\.aws>dir/p
+ Volume in drive C has no label.
+ Volume Serial Number is B2C3-C385
+
+ Directory of C:\Users\Win10\.aws
+
+06/07/2020  03:14 PM    <DIR>          .
+06/07/2020  03:14 PM    <DIR>          ..
+07/12/2020  01:16 PM                46 config
+07/12/2020  01:56 PM                59 credentials
+
+#Try connection to AWS
+C:\Users\Win10\aws s3 ls
+
+=============
+Setting AWS CLI on linux
+--Launch 1 EC2 instance (micro instances should be fine
+                          remember to have keypair created to access instances)
+
+connect to one of the EC2 instance (in my case m1) and
+
+setup awscli on ec2 instance (in our case Ubuntu)
+Ref link : https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html
+
+To install the AWS CLI version 1 using the bundled installer
+curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+
+Extract the files from the package. If you don't have unzip to extract the files, use your Linux distribution's built-in package manager to install it.
+sudo apt install unzip
+unzip awscli-bundle.zip
+
+Run the install program. The installer installs the AWS CLI at /usr/local/aws and creates the symlink aws at the /usr/local/bin directory. Using the -b option to create a symlink eliminates the need to specify the install directory in the user's $PATH variable. This should enable all users to call the AWS CLI by entering aws from any directory.
+sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+
+[The above mentioned command might fail with python error. You may have python3 installed in /usr/bin/python3
+ubuntu@ip-172-31-48-251:~$ sudo su
+root@ip-172-31-48-251:/home/ubuntu# cd
+root@ip-172-31-48-251:~# apt install python3-distutils
+
+Now run the command again:
+ sudo /usr/bin/python3 ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+]
+
+Optional:
+update your .bashrc for ubuntu user and refresh it
+vi .bashrc
+alias python=python3
+source .bashrc
+
+update these in ~/.aws/credentials
+export AWS_ACCESS_KEY_ID=
+
+export AWS_SECRET_ACCESS_KEY=
+
+#Specifies an AWS session token used as part of the credentials to authenticate the user. 
+A session token is required only if you manually specify temporary security credentials.
+export AWS_SESSION_TOKEN=
+
+ubuntu@ip-172-31-48-251:~$ aws --version
+aws-cli/1.18.88 Python/3.6.9 Linux/5.3.0-1023-aws botocore/1.17.11
+
+#Try connection to AWS
+ubuntu@ip-172-31-48-251:~$ aws s3 ls
+
