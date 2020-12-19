@@ -126,6 +126,75 @@ def lambda_handler(event, context):
         'body': response
     }
 =============
+#lambda function to copy from one s3 to another example
+example 1:
+
+import boto3
+
+s3_resource = boto3.resource('s3')
+
+new_bucket_name = "targetBucketName"
+bucket_to_copy = "sourceBucketName"
+
+for key in s3_resource.list_objects(Bucket=bucket_to_copy)['Contents']:
+    files = key['Key']
+    copy_source = {'Bucket': "bucket_to_copy",'Key': files}
+    s3_resource.meta.client.copy(copy_source, new_bucket_name, files)
+    print(files)
+
+example 2:
+source_client = boto3.client(
+    's3',
+    SOURCE_AWS_ACCESS_KEY_ID,
+    SOURCE_AWS_SECRET_ACCESS_KEY,
+)
+source_response = soure_client.get_object(
+  Bucket=<SOURCE_BUCKET>,
+  Key=<OBJECT_KEY>
+)
+destination_client = boto3.client(
+    's3',
+    DESTINATION_AWS_ACCESS_KEY_ID,
+    DESTINATION_AWS_SECRET_ACCESS_KEY,
+)
+destination_client.upload_fileobj(
+  source_response['Body'],
+  DESTINATION_BUCKET,
+  <FOLDER_LOCATION_IN_DESTINATION_BUCKET>,
+)
+===============
+First of all, you have to remember that S3 buckets do NOT have any “move” or “rename” operation.
+ All you can do is create, copy and delete.
+Under the hood, AWS CLI copies the objects to the target folder and then removes the original file. 
+The same applies to the rename operation. So, simple enough, you can do the same in your own implementation using Boto 3.
+If you want to move a file — or rename it — with Boto, you have to:
+Copy the object A to a new location within the same bucket. Thus, creating the object B.
+
+Delete the former object A.
+Because there is no “move” o “rename” action in S3, we can simulate those actions by using the above steps.
+
+import boto3
+s3_resource = boto3.resource(‘s3’)
+# Copy object A as object B
+s3_resource.Object(“bucket_name”, “newpath/to/object_B.txt”).copy_from(
+ CopySource=”path/to/your/object_A.txt”)
+# Delete the former object A
+s3_resource.Object(“bucket_name”, “path/to/your/object_A.txt”).delete()
+
+Moving files and grant public read access
+You can move — or rename — an object granting public read access through the ACL (Access Control List) of the new object. 
+To do this, you have to pass the ACL to the copy_from method
+
+s3_resource.Object(“bucket_name”,
+  “newpath/to/object_A.txt”).copy_from(
+    CopySource=”path/to/your/object_B.txt”, ACL=’public-read’)
+
+
+This way, you will move or rename the object and every user will get access to the object and read it.
+----------------------
+
+refer:
+https://realpython.com/python-boto3-aws-s3/
 
 
 
