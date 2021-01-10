@@ -178,6 +178,75 @@ def listncopy():
 
 listncopy()
 ========================
+#lambda to download files from s3 (Here we need to make sure to download file into lambda /tmp space or in memory for lambda)
+
+import boto3
+
+s3 =  boto3.client('s3')
+bucket = 'tbuck1aj'
+
+def lambda_handler(event, context):
+    
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                s3.download_file(copy_source['Bucket'], copy_source['Key'],copy_source['Key'])
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+#defining and running a function from your own setup (pycharm/visual studio code)
+#provided aws credentials is updated with access key id,pswd,token(if needed)
+
+import boto3
+
+s3 =  boto3.client('s3')
+bucket = 'tbuck1aj'
+
+def listndwnld():
+    
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                s3.download_file(copy_source['Bucket'], copy_source['Key'],copy_source['Key'])
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+listndwnld()
+===============
 #lambda & dynamoDB
 #lambda function to get items from dynamodb
 import json
