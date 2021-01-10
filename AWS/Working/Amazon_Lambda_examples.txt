@@ -247,6 +247,31 @@ def listndwnld():
 
 listndwnld()
 ===============
+#lambda/code to list filenames from a sqs queue (which has subscribed to SNS topic<-being updated by a trigger of lambda when
+a put event happens in chosen s3 bucket)
+#import libraries
+
+import boto3
+import json
+
+#connect to sqs 
+sqs = boto3.client('sqs', region_name='eu-central-1')
+keys = set()
+def sqsfunc():
+    
+    messages = sqs.receive_message(
+    QueueUrl='https://sqs.eu-central-1.amazonaws.com/443602378074/Mynewqaj',
+    MaxNumberOfMessages=10)
+    for i in messages['Messages']:
+        x = json.loads(i['Body'])
+        y = json.loads(x['Message'])
+        z = y['requestPayload']['Records']
+        keyname = z[0]['s3']['object']['key']
+        keys.add(keyname)
+        
+sqsfunc()
+======================
+
 #lambda & dynamoDB
 #lambda function to get items from dynamodb
 import json
