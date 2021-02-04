@@ -1,5 +1,7 @@
 --Create a bucket in s3 >Load sample data in a S3 bucket : newtick
 --Create another bucket for output : newtickout
+
+
 --Services > AWS Glue > create crawler > newtickcrawler
   crawler name : newtickcrawler
   crawler source type: data stores

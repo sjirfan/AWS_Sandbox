@@ -2,7 +2,7 @@
    "fileLocations": [
       {
          "URIs": [
-            "https://s3.amazonaws.com/mogrepswrk/allrealizations.csv"
+            "https://s3.amazonaws.com/tickitsimpli/Bank_full.csv"
          ]
       },
    ],

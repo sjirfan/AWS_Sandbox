@@ -1,3 +1,4 @@
+
 #code to download data from s3 to local machine.
 #note the list ie newdata can be uploaded with file names as a result of scanning sqs queues
 newdata = ['cv001_19502.txt']
