@@ -1,0 +1,45 @@
+Working with ElasticCache
+
+Services > ElasticCache > Get started..
+Select engine > Select Redis
+
+Specify cluster details : 
+Enable replication : Not required for now
+Multi-AZ : As per your choice
+Cluster name: MyTestCluster
+Node Type : cache.t2.micro > rest default > next
+
+Configure advanced Settings :
+<default settings or select your own VPC/subnet etc
+
+> review
+> Launch Cache Cluster
+(By default access to this cluster is limited to user who created it)
+
+Can be connected only via EC2 instance (within same vpc) and this needs authorization for EC2 instance to access 
+cache cluster..
+
+Grant 'network ingress' to cache cluster.
+
+Services > Ec2 > security groups (use SG used for cache cluster) 
+inbound : edit rules
+Custom TCP Port range (6379) Source:My Ip
+SSH                                 My Ip
+
+>save
+
+To be able to connect to cache cluster, determine the cache node endpoint.
+Look for your cache cluster > click under 'Nodes' > get the endpoint
+
+Now launch an EC2 instance
+Connect to it
+$sudo yum install telnet
+$telnet endpoint 6379
+
+<once connected we can issue redis commands>
+
+
+finally delete the cache cluster and EC2 instance
+
+
+

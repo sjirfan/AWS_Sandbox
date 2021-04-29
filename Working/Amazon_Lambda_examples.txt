@@ -1,0 +1,324 @@
+
+AWS Lambda
+------------
+--Is a compute service
+--serverless
+--supports different programming languages
+
+Usage
+--can be used as event driven compute service as a result of some event, (it runs code in response to events)
+--can be used to run your code as a response to HTTP code using amazon api gateway /api calls made via aws sdk
+--1 million requests/month 400,000gb/sec compute time/month for free
+
+Services > lambda > create function (Using Python)
+
+Author from scratch > 
+Function name: testf
+Runtime: python 3.6/3.8
+role : option 1: write logs to cloud watch
+       option 2: write data to s3 or transform data before it is written to s3
+       option 3: access data from s3 etc..
+
+create function
+
+Now looking into function:
+trigger : to invoke lambda function
+destination : choose the destination
+
+Function code :
+Code entry type
+runtime
+handler
+[if lambda handler changed in code, update it under handler so that aws lambda can launch your function]
+[AWS lambda expects a 'lambda_handler' function which expects two arguments (event and context)
+
+event : is a an object formed from a json formatted string that presents the action
+context : provided information about invocation, function and execution environment for ur lambda]
+
+Before we edit our code, let's also change basic settings (memory and Timeout)
+memory : function is allocated cpu propertional to memory configured
+timeout: longest amt of time for which function can run for(after which amazon will kill it)
+
+Before we edit our code, we can test the code as it is by creating/configuring a 'test event'
+Eventname: myTestEvent
+{
+}
+
+Now let's edit our code
+---
+#example lambda function 1
+
+import json
+
+def lambda_handler(event, context):
+    num1 = 100
+    num2 = 200
+    res = num1 + num2 
+    return {
+        'statusCode': 200,
+        'body': json.dumps(res)
+    }
+
+---
+#create test event and test the lambda function.
+or
+---
+#example lambda function 2
+import json
+
+def lambda_handler(event, context):
+    num1 = 100
+    num2 = 200
+    res = num1 + num2 
+    return res 
+
+====================
+#Lambda function to list buckets from s3:
+Note** remember to create appropriate role
+import json
+import boto3
+
+s3 = boto3.resource('s3')
+
+def lambda_handler(event, context):
+    bucket_list = []
+    for bucket in s3.buckets.all():
+	print(bucket.name)
+	bucket_list.append(bucket.name)
+    return {
+        'statusCode': 200,
+        'body': bucket_list
+    }
+
+#defining and running a function from your own setup (pycharm/visual studio code)
+#provided aws credentials is updated with access key id,pswd,token(if needed)
+
+import json
+import boto3
+
+s3 = boto3.resource('s3')
+
+def lists3():
+    bucket_list = []
+    for bucket in s3.buckets.all():
+	    print(bucket.name)
+	    bucket_list.append(bucket.name)
+    return bucket_list
+
+lists3()
+==================
+#lambda function to copy from one s3 bucket to another bucket
+example 1:
+import json
+import boto3
+
+s3_resource = boto3.resource('s3')
+s3 =  boto3.client('s3')
+
+def lambda_handler(event, context):
+    bucket = 'tbuck1aj'
+    newbucket = 'tbuck1aj3'
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                destbucket = s3_resource.Bucket(newbucket)
+                destbucket.copy(copy_source,key)
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+#defining and running a function from your own setup (pycharm/visual studio code)
+#provided aws credentials is updated with access key id,pswd,token(if needed)
+import boto3
+
+s3_resource = boto3.resource('s3')
+s3 =  boto3.client('s3')
+def listncopy():
+    bucket = 'tbuck1aj'
+    newbucket = 'tbuck1aj2'
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                destbucket = s3_resource.Bucket(newbucket)
+                destbucket.copy(copy_source,key)
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+listncopy()
+========================
+#lambda to download files from s3 (Here we need to make sure to download file into lambda /tmp space or in memory for lambda)
+
+import boto3
+
+s3 =  boto3.client('s3')
+bucket = 'tbuck1aj'
+
+def lambda_handler(event, context):
+    
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                s3.download_file(copy_source['Bucket'], copy_source['Key'],copy_source['Key'])
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+#defining and running a function from your own setup (pycharm/visual studio code)
+#provided aws credentials is updated with access key id,pswd,token(if needed)
+
+import boto3
+
+s3 =  boto3.client('s3')
+bucket = 'tbuck1aj'
+
+def listndwnld():
+    
+    try:
+        response = s3.list_objects(
+            Bucket=bucket,
+            MaxKeys=5
+        )
+
+        for record in response['Contents']:
+            key = record['Key']
+            copy_source = {
+                'Bucket': bucket,
+                'Key': key
+            }
+            try:
+                print(copy_source)
+                s3.download_file(copy_source['Bucket'], copy_source['Key'],copy_source['Key'])
+
+            except Exception as e:
+                print(e)
+                print('Error getting object {} from bucket {}. '.format(key, bucket))
+                raise e
+    except Exception as e:
+        print(e)
+        raise e
+
+listndwnld()
+===============
+#lambda/code to list filenames from a sqs queue (which has subscribed to SNS topic<-being updated by a trigger of lambda when
+a put event happens in chosen s3 bucket)
+#import libraries
+
+import boto3
+import json
+
+#connect to sqs 
+sqs = boto3.client('sqs', region_name='eu-central-1')
+keys = set()
+def sqsfunc():
+    
+    messages = sqs.receive_message(
+    QueueUrl='https://sqs.eu-central-1.amazonaws.com/443602378074/Mynewqaj',
+    MaxNumberOfMessages=10)
+    for i in messages['Messages']:
+        x = json.loads(i['Body'])
+        y = json.loads(x['Message'])
+        z = y['requestPayload']['Records']
+        keyname = z[0]['s3']['object']['key']
+        keys.add(keyname)
+        
+sqsfunc()
+======================
+
+#lambda & dynamoDB
+#lambda function to get items from dynamodb
+import json
+import boto3
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('usersTest')
+
+def lambda_handler(event, context):
+    response = table.get_item(
+	Key = {
+		'id': '12345'
+	}
+    )
+    print(response)
+    return {
+        'statusCode': 200,
+        'body': response
+    }
+================
+#lambda function to put items from dynamodb 
+#refer : Amazon_DynamoDB_Working
+import json
+import boto3
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('usersTest')
+
+def lambda_handler(event, context):
+    table.put_item(
+	Item = {
+		'id': '1234578',
+                'temp' : 'too hot'
+	}
+    )
+    response = {
+	'message': 'Item added'
+    }
+    return {
+        'statusCode': 200,
+        'body': response
+    }
+===========================
+refer:
+https://realpython.com/python-boto3-aws-s3/
+========================
+
+
+

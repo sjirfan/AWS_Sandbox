@@ -1,0 +1,22 @@
+Working with CloudFront
+------------
+Create a S3 bucket and upload some data. (testbuck1)
+Services > CloudFront Distributions > Create distribution 
+2 options
+--static
+--live stream
+
+Origin Domain name : select from drop down
+Origin path: blank
+Origin ID : choose the id
+Restrict Bucket access : Yes
+Origin Access Identity : create a New Identity
+Grant read permission on bucket : yes
+Viewer Protocol policy : redirect http to https
+Distribution Settings : Price Class (default)
+>Create distribution..
+
+Once done : get the domain name > try accessing
+(you are not accessing content via edge location)
+
+--------------

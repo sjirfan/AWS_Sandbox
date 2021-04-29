@@ -1,0 +1,125 @@
+Connect to console
+Services > VPCs > If no VPCs > Create default VPC
+Check 
+DNS hostnames -enabled
+DNS resolution - enabled
+Main route table - if created
+Main network ACL - if created
+IPv4 CIDR - if available (IP ranges)
+
+Check
+Subnets - if 3 subnets created
+172.31.16.0/20
+172.31.32.0/20
+172.31.0.0/20 (deleted for now to be used by new private subnet later)
+
+Check 
+Route table created and associated with VPC
+
+Check
+Internet Gateway created and associated with VPC
+
+Check 
+Network ACL created and associated with VPC
+
+Check
+Security Group created and associated with VPC
+
+Now click on
+Compute > EC2
+
+Create Key Pairs ( will be used to access instances)
+-save as PEM file ( can be converted to PPK to be used by client such as SSH)
+
+Edit Default security Group(additionally we can create a new security group)
+Edit inbound rules : Allow connections from your machine
+SSH TCP 22 My IP
+ALL TCP TCP 0-65535 My IP
+ALL ICMP ICMP ALL My IP
+SMTP TCP 25 My IP
+HTTP TCP 80 My IP
+> Save rules
+
+Outbound rules ( can be edited : as of now All traffic)
+
+Instances > Launch instance [ Setup an instance and check connectivity to it]
+Red hat > t2.micro > configure instance details >
+No of instances : 2 ( to later check if within VPC instances can connect to each other by adding SG to inbound rules)
+Network: default VPC
+Subnet : No preference
+Auto-assign public IP : enable ( to be disabled if we want only private IPs)
+Rest settings : default
+Add storage > default ( we can add new volume : EBS)
+Add tags > default
+Configure Security Group : Select existing security group > review and launch > review > launch > choose existing key pair
+
+launch...
+Meanwhile check in VPC > Route table > Routes > 
+shows :
+local
+default route to external internet via IGW
+
+convert PEM to PPK to access instances
+try connecting to instances from your machine ( this should work)
+
+Now pinging one instance from another or ssh ( needs Pem file)
+--will not work
+--modify SG to allow connection within VPC
+SSH TCP 22 Custom > choose SG..
+ALL ICMP ICMP ALL  Custom > choose SG..
+
+Test again..
+Note** for SSH within machines within VPC and within SG
+Download Pem file on instances
+chmod -R 400 NewKey.pem
+
+connect using
+ssh -i "path/NewKey.pem" ec2-user@private-ip
+
+------------------
+Check existing Subnets to avoid CIDR overlapping issue
+If existing subnets contain wide range of IPs ( delete one subnet and redo exercise with subnets having lower range of IPs)
+Creating private subnet
+Subnets > create subnet > Subnet name: PrivSubnet
+172.31.0.0/20
+--check if this is connected to same VPC as before, same route table thus same IGW
+
+Launch an instance within this without public IP
+Let it be attached to same SG as before..
+
+This instance doesnt have public IP, thus cannot be reached from external client such as putty
+--can be reached by another instance in same VPC/same SG 
+--cannot reach external network
+   --create nat gateway in a one of the public subnet
+   --create new route table and add route to use nat-gw
+   --change your private instance's private subnet 'route table association' to new route table.
+--check if can access external network
+--check if it can ssh to an instance in public subnet
+-----------------------
+
+Peering connection
+Create new VPC
+IPv4 CIDR: 10.0.0.0/24
+IPv4 CIDR for subnet : 10.0.0.0/28
+mysub01
+
+--check if new route table is created
+--launch a instance in this vpc>subnet without public IP
+ping or ssh from existing instances of old vpc wont work to this new instance..
+
+Peering connection > 
+VPC requester (old VPC)
+Select another VPC to peer ( My account and this region)
+VPC accepter (new VPC)
+
+Accept request..
+
+Also check if route table of new VPC has associated IGW , if not create and associate IGW with VPC and check route table
+Check if route table of 2 instances have peering conn ID associated..
+
+Test connection
+------------------
+
+   
+
+

@@ -1,0 +1,14 @@
+{
+   "fileLocations": [
+      {
+         "URIs": [
+            "https://s3.amazonaws.com/tickitsimpli/Bank_full.csv"
+         ]
+      },
+   ],
+   "globalUploadSettings": {
+      "format": "CSV",
+      "delimiter": ",",
+      "containsHeader": "true"
+   }
+}
