@@ -1,0 +1,111 @@
+#Setting up serverless redshift
+-----------------------
+Try redshift serverless > 
+--use default settings or customize
+If customize settings
+--Namespace - a collection of database objects and users
+namespace: mynsredshift
+--dbname: dev
+--customize admin user credentials : 
+admin
+Abcd$1234
+--Associate IAM role
+Create IAM role as default , able to access any s3 bucket.
+--we need to add 'AmazonRedshiftAllCommandsFullAccess' & 's3 full access' policy to this role.
+
+--Security and encrytion (default)
+--workgroup (a collection of compute resources from which an endpoint is created,
+		Compute properties include network and security settings.)
+workgroup name: mywgforredshift
+
+Capacity: Capacity is measured in Redshift processing units (RPUs). (used for processing workloads)
+          Setting the RPU value higher increases capability and improves performance.
+from 8-512 [in increments of 8], default being 128.
+
+--Network and security
+  use default vpc
+  use default security group and edit ingree/egress rules to control in/out traffic.
+
+<save configuration>
+--setting up your 'Amazon Redshift Serverless'
+
+Other Info:
+Total snapshots:
+Datashares in my account:
+Datashares requiring authorization
+Datashares from other accounts
+Datashares requiring assoiciation.
+
+--to visualize cost of your total compute usage > AWS cost explorer.
+
+Query editor >
+--create table 
+
+create table event(
+	eventid integer not null distkey,
+	venueid smallint not null,
+	catid smallint not null,
+	dateid smallint not null sortkey,
+	eventname varchar(200),
+	starttime timestamp);
+
+--This gets created in dev db, public schema
+SELECT * FROM PG_TABLE_DEF;
+SELECT * FROM PG_TABLE_DEF where schemaname = 'public';
+SELECT * FROM PG_TABLE_DEF  where tablename = 'event'
+
+--check your role 'AmazonRedshift-CommandsAccessRole-2024xxxxxx' & permissions/policies attached to it.
+
+Now upload a file from github into your s3 bucket (buck1mar--create it if not created)
+filename: allevents_pipe-1.txt
+
+note**file contains 8799 rows plus header row.
+If file did not contain header, we can avoid the 'IGNOREHEADER' option.
+file contains '|' as delimiter or use delimiter as in file.
+
+COPY event
+FROM 's3://buck1mar/allevents_pipe-1.txt' 
+DELIMITER '|' 
+TIMEFORMAT 'YYYY-MM-DD HH:MI:SS'
+IGNOREHEADER 1
+REGION 'eu-central-1'
+IAM_ROLE 'arnxxxx';
+
+select count(*) from dev.public.event;
+8798 rows
+
+delete from dev.public.event;
+
+select count(*) from dev.public.event;
+0
+
+drop table..
+-------------
+<optional> Note** its same as in provisioned cluster.
+create tables -users,event,venue,category,date,listing & sales.
+Load data from files in buck1mar.
+---------------
+Understanding RPUs
+Earlier the minimum base capacity required to run serverless : 32 RPU. 
+New lowered base capacity  : 8 RPU
+incrementing with 8 RPUs
+
+From left menu > workgroup configuration 
+--here we can modify 'data access' settings (later..)
+--here we can modify 'limits' to control base capacity (i.e. RPUs), Max capacity & usage limits.
+  --we can also add multiple 'query limits' from 'Manage query limits'.
+
+Understanding Datashares
+
+
+
+
+
+
+
+
+
+
+
+
+
