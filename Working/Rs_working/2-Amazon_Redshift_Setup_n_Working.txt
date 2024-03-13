@@ -1,0 +1,307 @@
+Instructions:
+
+Redshift setup and usage:
+Reference Link:
+https://docs.aws.amazon.com/redshift/latest/gsg/getting-started.html
+
+--Create a bucket in s3 and upload data from above mentioned link (tickit)
+
+Options:
+--Create cluster (for more granular control)
+name: rs-cluster-1
+size of cluster: dc2.large
+number of nodes: 2
+admin user name: awsuser
+pswd: abcd@1234
+
+--create default IAM role > Any s3 bucket
+  Add policy to have AmazonRedshiftAllCommandsFullAccess
+Additional configurations: use default
+
+---cluster created with public access option ( and then connect to it using external client such as sql workbench)
+---cluster created without public access (connect to it using internal client or sql editor: 
+   will also need right roles to read/write data from s3]
+
+--Create roles that allows redshift to access data from s3 (AmazonS3FullAccess) & have (AmazonRedshiftAllCommandsFullAccess)
+--Create redshift cluster [without allowing public access and this can be edited later]
+
+
+Get the jdbc url
+jdbc:redshift://redshift-cluster-xxxxxxxxxxxxxxxx.eu-central-1.redshift.amazonaws.com:5439/dev
+
+Get the role arn from role you just created (will be needed when we load data from s3 to redshift )
+arn:aws:iam::381492xxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-2024031xxxxxxxxx
+
+Test your connection
+Amazon Redshift retains a great deal of metadata about the various databases within a cluster and finding a 
+list of tables is no exception to this rule.
+The most useful object for this task is the PG_TABLE_DEF table, which as the name implies, 
+contains table definition information. Note: The PG_ prefix is just a holdover from PostgreSQL, 
+the database technology from which Amazon Redshift was developed.
+To begin finding information about the tables in the system, you can simply return columns from PG_TABLE_DEF:
+
+SELECT
+  *
+FROM
+  PG_TABLE_DEF;
+
+For better or worse, PG_TABLE_DEF contains information about everything in the system, 
+so the results of such an open query will be massive, but should give you an idea of what 
+PG_TABLE_DEF is capable of:
+schemaname  tablename                   column          type            encoding distkey sortkey notnull
+--------------------------------------------------------------------------------------------------------
+pg_catalog  padb_config_harvest         name            character(136)  none     false   0       true
+pg_catalog  padb_config_harvest         harvest         integer         none     false   0       true
+pg_catalog  padb_config_harvest         archive         integer         none     false   0       true
+pg_catalog  padb_config_harvest         directory       character(500)  none     false   0       true
+
+To limit the results to user-defined tables, it’s important to specify the schemaname column to return 
+only results which are public:
+
+SELECT distinct(schemaname) FROM   PG_TABLE_DEF;
+
+Lastly, if we are solely interested only the names of tables which are user-defined, 
+we’ll need to filter the above results by retrieving DISTINCT items from within the tablename column:
+
+SELECT
+  DISTINCT tablename FROM PG_TABLE_DEF WHERE schemaname = 'pg_catalog';
+
+This returns only the unique tables within the system:
+
+create your bucket (tickitbuk) and then upload sample date
+
+--creating tables
+create table users(
+	userid integer not null distkey sortkey,
+	username char(8),
+	firstname varchar(30),
+	lastname varchar(30),
+	city varchar(30),
+	state char(2),
+	email varchar(100),
+	phone char(14),
+	likesports boolean,
+	liketheatre boolean,
+	likeconcerts boolean,
+	likejazz boolean,
+	likeclassical boolean,
+	likeopera boolean,
+	likerock boolean,
+	likevegas boolean,
+	likebroadway boolean,
+	likemusicals boolean);
+
+create table venue(
+	venueid smallint not null distkey sortkey,
+	venuename varchar(100),
+	venuecity varchar(30),
+	venuestate char(2),
+	venueseats integer);
+
+create table category(
+	catid smallint not null distkey sortkey,
+	catgroup varchar(10),
+	catname varchar(10),
+	catdesc varchar(50));
+
+create table date(
+	dateid smallint not null distkey sortkey,
+	caldate date not null,
+	day character(3) not null,
+	week smallint not null,
+	month character(5) not null,
+	qtr character(5) not null,
+	year smallint not null,
+	holiday boolean default('N'));
+
+create table event(
+	eventid integer not null distkey,
+	venueid smallint not null,
+	catid smallint not null,
+	dateid smallint not null sortkey,
+	eventname varchar(200),
+	starttime timestamp);
+
+create table listing(
+	listid integer not null distkey,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp);
+
+create table sales(
+	salesid integer not null,
+	listid integer not null distkey,
+	sellerid integer not null,
+	buyerid integer not null,
+	eventid integer not null,
+	dateid smallint not null sortkey,
+	qtysold smallint not null,
+	pricepaid decimal(8,2),
+	commission decimal(8,2),
+	saletime timestamp);
+
+
+check for tables:
+SELECT   *  FROM   PG_TABLE_DEF where tablename = 'venue';
+SELECT   *  FROM   PG_TABLE_DEF where schemaname = 'public';
+
+Lets upload data to redshift tables from s3:
+
+Download file tickitdb.zip that contains individual sample data files. 
+Unzip and load the individual files to a tickit folder in your Amazon S3 bucket in your AWS Region.
+Edit the COPY commands in this tutorial to point to the files in your Amazon S3 bucket.
+
+--copy data from s3 
+COPY users 
+FROM 's3://tickitbuk/allusers_pipe.txt' 
+DELIMITER '|' 
+TIMEFORMAT 'YYYY-MM-DD HH:MI:SS'
+IGNOREHEADER 1 
+REGION 'eu-central-1'
+IAM_ROLE default;                    
+                    
+COPY event
+FROM 's3://tickitbuk/allevents_pipe.txt' 
+DELIMITER '|' 
+TIMEFORMAT 'YYYY-MM-DD HH:MI:SS'
+IGNOREHEADER 1 
+REGION 'eu-central-1'
+IAM_ROLE default;
+
+COPY sales
+FROM 's3://tickitbuk/sales_tab.txt' 
+DELIMITER '\t' 
+TIMEFORMAT 'MM/DD/YYYY HH:MI:SS'
+IGNOREHEADER 1 
+REGION 'eu-central-1'
+IAM_ROLE default;
+
+or using query editor v2 > right click on cluster > create connection > using database username >
+--category
+--listing
+--date
+--venue
+
+COPY dev.public.category FROM 's3://tickitbuk/category_pipe.txt' IAM_ROLE 
+'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+
+COPY dev.public.listing FROM 's3://tickitbuk/listings_pipe.txt' IAM_ROLE 
+'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+
+COPY dev.public.date FROM 's3://tickitbuk/date2008_pipe.txt' IAM_ROLE 
+'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+
+COPY dev.public.venue FROM 's3://tickitbuk/venue_pipe.txt' IAM_ROLE 
+'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+
+-----------------
+Querying your data/analysis
+-- Find top 10 buyers by quantity.
+SELECT firstname, lastname, total_quantity 
+FROM   (SELECT buyerid, sum(qtysold) total_quantity
+        FROM  sales
+        GROUP BY buyerid
+        ORDER BY total_quantity desc limit 10) Q, users
+WHERE Q.buyerid = userid
+ORDER BY Q.total_quantity desc;
+
+-- Find events in the 99.9 percentile in terms of all time gross sales.
+SELECT eventname, total_price 
+FROM  (SELECT eventid, total_price, ntile(1000) over(order by total_price desc) as percentile 
+       FROM (SELECT eventid, sum(pricepaid) total_price
+             FROM   sales
+             GROUP BY eventid)) Q, event E
+       WHERE Q.eventid = E.eventid
+       AND percentile = 1
+ORDER BY total_price desc;
+
+-- Get definition for the sales table.
+SELECT *    
+FROM pg_table_def    
+WHERE tablename = 'sales';    
+
+-- Find total sales on a given calendar date.
+SELECT sum(qtysold) 
+FROM   sales, date 
+WHERE  sales.dateid = date.dateid 
+AND    caldate = '2008-01-05';
+
+-- Find top 10 buyers by quantity.
+SELECT firstname, lastname, total_quantity 
+FROM   (SELECT buyerid, sum(qtysold) total_quantity
+        FROM  sales
+        GROUP BY buyerid
+        ORDER BY total_quantity desc limit 10) Q, users
+WHERE Q.buyerid = userid
+ORDER BY Q.total_quantity desc;
+
+-- Find events in the 99.9 percentile in terms of all time gross sales.
+SELECT eventname, total_price 
+FROM  (SELECT eventid, total_price, ntile(1000) over(order by total_price desc) as percentile 
+       FROM (SELECT eventid, sum(pricepaid) total_price
+             FROM   sales
+             GROUP BY eventid)) Q, event E
+       WHERE Q.eventid = E.eventid
+       AND percentile = 1
+ORDER BY total_price desc;
+
+& so on...
+
+======================
+--Test setting up 'Amazon Redshift Serverless'
+
+======================
+System catalog tables
+
+The system catalogs store schema metadata, such as information about tables and columns. System catalog tables have a PG prefix.
+
+PG_ATTRIBUTE_INFO
+--Amazon Redshift system view built on the PostgreSQL catalog table PG_ATTRIBUTE and the internal catalog table PG_ATTRIBUTE_ACL.
+PG_ATTRIBUTE_INFO includes details about columns of a table or view, including column access control lists, if any.
+
+PG_CLASS_INFO
+-- view built on the PostgreSQL catalog tables PG_CLASS and PG_CLASS_EXTENDED.
+  PG_CLASS_INFO includes details about table creation time and the current distribution style. 
+
+PG_DATABASE_INFO
+--view that extends the PostgreSQL catalog table PG_DATABASE.
+
+PG_DEFAULT_ACL
+--Stores information about default access privileges.
+
+PG_EXTERNAL_SCHEMA
+--Stores information about external schemas.
+
+PG_LIBRARY
+--Stores information about user-defined libraries.
+
+PG_PROC_INFO
+--view built on the PostgreSQL catalog table PG_PROC and the internal catalog table PG_PROC_EXTENDED. 
+PG_PROC_INFO includes details about stored procedures and functions, including information related to output arguments, if any.
+
+PG_STATISTIC_INDICATOR
+--Stores information about the number of rows inserted or deleted since the last ANALYZE.
+The PG_STATISTIC_INDICATOR table is updated frequently following DML operations, so statistics are approximate.
+
+PG_TABLE_DEF
+--Stores information about table columns.
+
+PG_TABLE_DEF only returns information about tables that are visible to the user.
+If PG_TABLE_DEF does not return the expected results, verify that the search_path parameter is set correctly to include the relevant schemas.
+You can use SVV_TABLE_INFO to view more comprehensive information about a table, including data distribution skew, 
+key distribution skew, table size, and statistics.
+
+PG_USER_INFO
+--view that shows user information, such as user ID and password expiration time.
+
+==================
+
+

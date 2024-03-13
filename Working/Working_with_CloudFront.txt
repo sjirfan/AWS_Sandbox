@@ -14,9 +14,15 @@ Origin Access Identity : create a New Identity
 Grant read permission on bucket : yes
 Viewer Protocol policy : redirect http to https
 Distribution Settings : Price Class (default)
+Optional : Default Root object (specify specific file)
+Distribution state : enabled
+
+
 >Create distribution..
 
 Once done : get the domain name > try accessing
 (you are not accessing content via edge location)
 
 --------------
+
+
