@@ -193,6 +193,16 @@ create table venue3(
 
 select * from pg_table_def where tablename = 'venue3';
 
+select count(*) from venue;
+select count(*) from venue3;
+
+select * from venue;
+
+explain select * from venue where venueid > 55 and venuecity = 'orlando';
+explain select * from venue3 where venueid > 55 and venuecity = 'orlando';
+
+--look at elapsed time and explain result.
+
 #--create listing table
 create table listing(
 	listid integer not null distkey,
