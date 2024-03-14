@@ -182,6 +182,8 @@ select * from venue2 where venueid = 7 and venuecity = 'Toronto';
 yyyy ms (lesser than xxxx?)
 
 --multiple runs reduces the time taken..
+--Using compression
+https://aws.amazon.com/blogs/aws/data-compression-improvements-in-amazon-redshift/
 
 create table venue3(
 	venueid smallint not null encode az64 ,
@@ -193,6 +195,10 @@ create table venue3(
 
 select * from pg_table_def where tablename = 'venue3';
 
+--Testing ANALYZE COMPRESSION
+Performs compression analysis and produces a report with the suggested compression encoding for the tables analyzed. 
+For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.
+
 select count(*) from venue;
 select count(*) from venue3;
 
@@ -202,6 +208,19 @@ explain select * from venue where venueid > 55 and venuecity = 'orlando';
 explain select * from venue3 where venueid > 55 and venuecity = 'orlando';
 
 --look at elapsed time and explain result.
+
+<optional>
+create table venue4(
+	venueid smallint not null ,
+	venuename varchar(100),
+	venuecity varchar(30),
+	venuestate char(2),
+	venueseats integer ) 
+    sortkey auto ;
+
+select * from pg_table_def where tablename = 'venue4';
+
+----------
 
 #--create listing table
 create table listing(
@@ -223,6 +242,9 @@ create table listing2(
 	priceperticket decimal(8,2),
 	totalprice decimal(8,2),
 	listtime timestamp) diststyle key distkey (sellerid);
+
+analyze compression listing;
+
 
 --Load data into both tables
 COPY dev.public.listing2 FROM 's3://buck1mar/listings_pipe.txt' 
