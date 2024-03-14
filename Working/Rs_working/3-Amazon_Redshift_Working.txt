@@ -95,7 +95,211 @@ From left menu > workgroup configuration
 --here we can modify 'limits' to control base capacity (i.e. RPUs), Max capacity & usage limits.
   --we can also add multiple 'query limits' from 'Manage query limits'.
 
-Understanding Datashares
+----------------------------------
+
+create database mydb;
+select * from pg_database;
+create user myuser password 'Abcd$1234';
+select * from pg_user;
+select CURRENT_USER;
+select CURRENT_SCHEMA();
+
+--we can create multiple schemas within the same database to organize data
+create SCHEMA myschema AUTHORIZATION myuser;
+select * from pg_namespace;
+grant select on all tables in schema myschema to myuser;
+grant all on schema myschema to myuser;
+
+--while being in dev if we try
+create table mydb.public.emp1(empid int, name varchar(max));
+Err: cross-database reference to database "mydb" is not supported
+--switch db to mydb and rerun
+create table mydb.public.emp1(empid int, name varchar(max));
+
+--similary switch to dev
+create table dev.myschema.emp1(empid int, name varchar(max));
+
+show search_path;
+SELECT * FROM PG_TABLE_DEF where schemaname = 'myschema';
+set search_path to '$user','public','myschema';
+SELECT * FROM PG_TABLE_DEF where schemaname = 'myschema';
+
+--Testing exlain
+create table event (--from query given above)
+load data into table (--as shown above using file 'allevents_pipe.txt'
+
+select eventname,count(*) from event group by eventname;
+explain select eventname,count(*) from event group by eventname;
+enable explain from menu on top to look into graph.
+
+--create venue table if not created already.
+create table venue(
+	venueid smallint not null distkey sortkey,
+	venuename varchar(100),
+	venuecity varchar(30),
+	venuestate char(2),
+	venueseats integer);
+note** usage of distkey and sortkey
+
+--
+create table venue1(
+	venueid smallint not null ,
+	venuename varchar(100),
+	venuecity varchar(30),
+	venuestate char(2),
+	venueseats integer)
+    sortkey(venueid);
+
+--
+create table venue2(
+	venueid smallint not null ,
+	venuename varchar(100),
+	venuecity varchar(30),
+	venuestate char(2),
+	venueseats integer)
+ sortkey(venueid,venuecity);
+
+select * from pg_table_def where tablename = 'venue2';
+--look at columns distkey and sortkey(for value other than 0)
+
+COPY dev.public.venue 
+FROM 's3://buck1mar/venue_pipe.txt' 
+IAM_ROLE 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502' 
+FORMAT AS CSV DELIMITER '|'
+REGION AS 'eu-central-1'
+
+elapsed time: 1.6s
+
+load same data into venue2 and check elapsed time (~25s)
+--second run : 13s
+select count(*) from venue;
+select count(*) from venue2;
+
+
+select * from venue where venueid = 7 and venuecity = 'Toronto';
+xxxx ms
+select * from venue2 where venueid = 7 and venuecity = 'Toronto';
+yyyy ms (lesser than xxxx?)
+
+--multiple runs reduces the time taken..
+
+create table venue3(
+	venueid smallint not null encode az64 ,
+	venuename varchar(100) encode bytedict,
+	venuecity varchar(30) encode bytedict,
+	venuestate char(2) encode lzo,
+	venueseats integer encode az64)
+ sortkey(venueid,venuecity);
+
+select * from pg_table_def where tablename = 'venue3';
+
+#--create listing table
+create table listing(
+	listid integer not null distkey,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp);
+
+create table listing2(
+	listid integer not null,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp) diststyle key distkey (sellerid);
+
+--Load data into both tables
+COPY dev.public.listing2 FROM 's3://buck1mar/listings_pipe.txt' 
+IAM_ROLE 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
+
+Select diststyle, skew_rows from svv_table_info ;
+Select diststyle, skew_rows from svv_table_info where "table" = 'listing2';
+
+--test querying on bth tables..
+---------
+--Unload data to S3
+unload ('select * from listing') to 's3://buck1mar/listing_bckup'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+json
+
+Note** creates multiple files here with prefix as listing_backup..
+Amazon Redshift splits the results of a select statement across a set of files, one or more files per node slice, 
+to simplify parallel reloading of the data. Alternatively, you can specify that UNLOAD should write the results serially to 
+one or more files by adding the PARALLEL OFF option. You can limit the size of the files in Amazon S3 by specifying the MAXFILESIZE parameter. 
+UNLOAD automatically encrypts data files using Amazon S3 server-side encryption (SSE-S3).
+
+By default, UNLOAD writes data in parallel to multiple files, according to the number of slices in the cluster
+
+unload ('select * from listing') to 's3://buck1mar/listing_bckup2'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+parallel off
+
+other options:
+--to divide data into equal size files
+maxfilesize xx mb;
+
+--to create a manifest file that lists the unload files
+The manifest is a text file in JSON format that explicitly lists the URL of each file that was written to Amazon S3.
+manifest
+
+--UNLOAD command includes a quoted string in the select statement, so the quotation marks are escaped (=\'OH\' ').
+unload ('select venuename, venuecity from venue where venuestate=\'OH\' ')
+to 's3://buck1mar/listing_bckup'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+
+--to overwrite existing files
+allowoverwrite
+
+==========================
+System catelog tables
+PG_*
+
+System monitoring tables  (but for provisioned only clusters)
+
+#STL views are generated from logs that have been persisted to disk to provide a history of the system.
+#STV tables are virtual system tables that contain snapshots of the current system data. 
+ They are based on transient in-memory data and are not persisted to disk-based logs or regular tables.
+
+--using STV tables
+--cancelling a long running query
+select pid,trim(user_name),starttime,substring(query,1,20) from stv_recents where status = 'Running';
+cancel pid;
+abort or rollback;
+
+--check if following permissions are added (if needed)
+AmazonRedshiftQueryEditorV2FullAccess
+
+#SVCS views provide details about queries on both the main and concurrency scaling clusters.
+
+#SVL views provide details about queries on main clusters.
+
+#SYS - monitoring views
+used to monitor query and workload usage for provisioned clusters and serverless workgroups.
+
+#SVV - metadata views
+Contain information about database objects with references to transient STV tables.
+select * from svv_tables ;
+select * from svv_tables where table_name like 'venue%';
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

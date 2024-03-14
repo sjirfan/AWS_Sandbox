@@ -1,0 +1,76 @@
+#Working with Spectrum
+---------------
+--Create external schemas for spectrum, then create an external table that references data in S3.
+--External schema is used to define the data sources that redshift spectrum can query.
+
+WE need to
+-create external tables in an external schema
+-external schema references a database in the external data catalog and provides the IAM role ARN that authorizes your cluster
+to access s3 on your behalf.
+--we can create an external database in an Amazon athena data catalog, Amazon Glue data catalog or Hive metastore (within EMR)
+
+Use AWS Glue Data Catalog
+--create an IAM role for RS to use Glue data catalog
+--grant necessary permissions to the IAM role associated with redshift cluster
+>AWSGlueConsoleFullAccess
+>AmazonS3FullAccess
+>AWSGlueServiceRole
+
+
+--working with glue
+>Glue > create crawler > (add dat source) pointing to 'venue' file
+ --add role which has following permissions
+
+--AmazonS3FullAccess
+--AmazonAthenaFullAccess (optional)
+--AWSGlueServiceRole
+--CloudWatchLogsFullAccess
+
+--dbname: mydbext, --tblname: mytblext
+
+>run crawler
+
+>>we can now even heck db and table in athena
+
+
+>>for external schema
+create external schema spectrum_schema
+from data catalog database 'mydbext'
+iam_role '<>'
+create external database if not exists;
+
+--will throw error due to role.
+--add permissions to role of RS to access glue
+>AWSGlueConsoleFullAccess (optional)
+>AWSGlueServiceRole
+
+>>give permissions if new user
+alter schema spectrum_schema owner to 'user';
+
+--select * from dev.spectrum_schema.mytblext
+
+--creating external table which is automatically loaded from s3
+create external table spectrum_schema.venue
+(
+id smallint,
+name varchar(100),
+city varchar(40),
+state char(2),
+seats integer)
+
+row format delimited
+fields terminated by '|'
+location 's3://<bucket>/filefolder/';
+
+Note**
+external tables are read-only 
+eternal tables only provide view into data (external data source)
+if we drop an external table in RS, it only removes the metadata about the table from the cluster
+
+
+
+
+
+
+
+

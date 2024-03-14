@@ -68,7 +68,7 @@ SELECT
 
 This returns only the unique tables within the system:
 
-create your bucket (tickitbuk) and then upload sample date
+create your bucket (buck1mar) and then upload sample date
 
 --creating tables
 create table users(
@@ -157,50 +157,62 @@ Edit the COPY commands in this tutorial to point to the files in your Amazon S3 
 
 --copy data from s3 
 COPY users 
-FROM 's3://tickitbuk/allusers_pipe.txt' 
+FROM 's3://buck1mar/allusers_pipe.txt' 
 DELIMITER '|' 
 TIMEFORMAT 'YYYY-MM-DD HH:MI:SS'
-IGNOREHEADER 1 
 REGION 'eu-central-1'
-IAM_ROLE default;                    
+IAM_ROLE '<your role arn or default>'                    
                     
 COPY event
-FROM 's3://tickitbuk/allevents_pipe.txt' 
+FROM 's3://buck1mar/allevents_pipe.txt' 
 DELIMITER '|' 
 TIMEFORMAT 'YYYY-MM-DD HH:MI:SS'
-IGNOREHEADER 1 
+IGNOREHEADER 0 
 REGION 'eu-central-1'
 IAM_ROLE default;
+
+error: Load into table 'event' failed. Check 'sys_load_error_detail' system table for details. 
+select * from sys_load_error_detail
+--shows: Invalid digit, Value 'e', Pos 0, Type: Integer  
+--issue with file
+
+--retry
+COPY dev.public.event FROM 's3://buck1mar/allevents_pipe.txt' 
+IAM_ROLE '<your role arn or default>' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
 
 COPY sales
-FROM 's3://tickitbuk/sales_tab.txt' 
+FROM 's3://buck1mar/sales_tab.txt' 
 DELIMITER '\t' 
 TIMEFORMAT 'MM/DD/YYYY HH:MI:SS'
-IGNOREHEADER 1 
 REGION 'eu-central-1'
-IAM_ROLE default;
+IAM_ROLE '<your role arn or default>';  
 
-or using query editor v2 > right click on cluster > create connection > using database username >
---category
---listing
---date
---venue
+COPY category
+FROM 's3://buck1mar/category_pipe.txt' 
+DELIMITER '|' 
+TIMEFORMAT 'MM/DD/YYYY HH:MI:SS'
+REGION 'eu-central-1'
+IAM_ROLE '<your role arn or default>';   
 
-COPY dev.public.category FROM 's3://tickitbuk/category_pipe.txt' IAM_ROLE 
-'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
-FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+--if when loading for listing any error, look into
+select * from sys_load_error_detail
+Invalid timestamp format or value [MM/DD/YYYY HH:MI:SS]
 
-COPY dev.public.listing FROM 's3://tickitbuk/listings_pipe.txt' IAM_ROLE 
-'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
-FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+--try again
+COPY dev.public.listing FROM 's3://buck1mar/listings_pipe.txt' 
+IAM_ROLE '<your role arn or default>' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 0 REGION AS 'eu-central-1'
 
-COPY dev.public.date FROM 's3://tickitbuk/date2008_pipe.txt' IAM_ROLE 
-'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
-FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+COPY dev.public.date FROM 's3://buck1mar/date2008_pipe.txt' 
+IAM_ROLE '<your role arn or default>' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
 
-COPY dev.public.venue FROM 's3://tickitbuk/venue_pipe.txt' IAM_ROLE 
-'arn:aws:iam::xxxxxxxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240312T185013' 
-FORMAT AS CSV DELIMITER '|' QUOTE '"' IGNOREHEADER 1 REGION AS 'eu-central-1'
+COPY dev.public.venue FROM 's3://buck1mar/venue_pipe.txt' 
+IAM_ROLE '<your role arn or default>' 
+FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
+
+or using query editor v2 > right click on cluster > create connection > using database username > and load manually
 
 -----------------
 Querying your data/analysis
@@ -254,6 +266,14 @@ FROM  (SELECT eventid, total_price, ntile(1000) over(order by total_price desc) 
 ORDER BY total_price desc;
 
 & so on...
+
+select *
+from stl_connection_log
+where event = 'initiating session'
+and pid not in
+(select pid from stl_connection_log
+where event = 'disconnecting session')
+order by 1 desc;
 
 ======================
 --Test setting up 'Amazon Redshift Serverless'
