@@ -1,71 +1,129 @@
 #Working with Spectrum
 ---------------
---Create external schemas for spectrum, then create an external table that references data in S3.
---External schema is used to define the data sources that redshift spectrum can query.
+--Create external schema for spectrum, then create an external database containing table that references data in S3.
+--External schema is used to define the data sources that redshift spectrum can query directly.
 
 WE need to
--create external tables in an external schema
--external schema references a database in the external data catalog and provides the IAM role ARN that authorizes your cluster
-to access s3 on your behalf.
---we can create an external database in an Amazon athena data catalog, Amazon Glue data catalog or Hive metastore (within EMR)
+--create external schema references a database in the external data catalog.
+--we can create an external database in an Amazon athena data catalog, 
+mazon Glue data catalog or Hive metastore (within EMR)
 
-Use AWS Glue Data Catalog
---create an IAM role for RS to use Glue data catalog
---grant necessary permissions to the IAM role associated with redshift cluster
->AWSGlueConsoleFullAccess
->AmazonS3FullAccess
->AWSGlueServiceRole
+Create a role for Glue
+--permissions/policy
+AmazonS3FullAccess
+AWSGlueConsoleFullAccess
+AWSGlueServiceRole
+AmazonAthenaFullAccess (optional)
+CloudWatchLogsFullAccess (optional)
 
+Create a bucket in s3 and upload a file > venue_pipe.txt
+--we will use this folder to create catalog to be used by redshift spectrum later.
+s3 path : 
 
 --working with glue
->Glue > create crawler > (add dat source) pointing to 'venue' file
- --add role which has following permissions
+Create a crawler in glue based on source in s3
 
---AmazonS3FullAccess
---AmazonAthenaFullAccess (optional)
---AWSGlueServiceRole
---CloudWatchLogsFullAccess
+>Glue > create crawler > (add dat source) pointing to folder containing 'venue_pipe.txt'.
+--dbname: mydbextforrs, --tblname(prefix): mytblextforrs
 
---dbname: mydbext, --tblname: mytblext
+Run your crawler
 
->run crawler
+Check  your table..
+we can do view data but for that we need to add permissions to our role to be able to access athena..
+If not just view schema to confirm.
+ 
+To Use AWS Glue Data Catalog from RS
+--grant necessary permissions to the IAM role associated with redshift cluster
+>AWSGlueConsoleFullAccess
+>AWSGlueServiceRole
 
->>we can now even heck db and table in athena
-
-
+--from RS Query editor
 >>for external schema
 create external schema spectrum_schema
-from data catalog database 'mydbext'
+from data catalog database 'mydbextforrs'
 iam_role '<>'
 create external database if not exists;
 
---will throw error due to role.
---add permissions to role of RS to access glue
->AWSGlueConsoleFullAccess (optional)
->AWSGlueServiceRole
-
->>give permissions if new user
+>>give permissions if doing it for new user <optional>
 alter schema spectrum_schema owner to 'user';
 
---select * from dev.spectrum_schema.mytblext
+--querying data from external schema
+select * from dev.spectrum_schema.mytblextforrs
 
+--we can also create an external table
 --creating external table which is automatically loaded from s3
-create external table spectrum_schema.venue
+create external table spectrum_schema.venue2
 (
 id smallint,
 name varchar(100),
 city varchar(40),
 state char(2),
 seats integer)
-
 row format delimited
 fields terminated by '|'
 location 's3://<bucket>/filefolder/';
 
 Note**
 external tables are read-only 
-eternal tables only provide view into data (external data source)
+external tables only provide view into data (external data source)
 if we drop an external table in RS, it only removes the metadata about the table from the cluster
+
+===================
+--similarly we can create an additional table
+create external table spectrum_schema.bank_data
+(
+serNo integer,
+age integer,job varchar(40), marital varchar(50),
+education varchar(40), defaulter char(10), balance integer,
+housing char(10), loan char(2),  contact varchar (40), day DATE,
+month DATE, duration integer, campaign integer, pdays integer,
+previous integer, poutcome varchar (40), y char(10))
+row format delimited
+fields terminated by ','
+location 's3://buck3mar';
+
+---------------
+select * from dev.spectrum_schema.bank_data;
+
+select marital, y, age, count(*) as count from dev.spectrum_schema.bank_data
+group by marital,age,y;
+
+select marital, y, count(*) as count from dev.spectrum_schema.bank_data
+group by marital,y
+order by count desc;
+
+--------------------
+--When looking for details about spectrum based queries:
+
+>>The number of files that were processed by the Redshift Spectrum query.
+>>The number of bytes scanned from Amazon S3. 
+  The cost of a Redshift Spectrum query is reflected in the amount of data scanned from Amazon S3.
+>>The number of bytes returned from the Redshift Spectrum layer to the cluster. 
+   A large amount of data returned might affect system performance.
+>>The maximum duration and average duration of Redshift Spectrum requests. Long-running requests might indicate a bottleneck.
+
+select * from SVL_S3QUERY;
+Use the SVL_S3QUERY view to get details about Redshift Spectrum queries (S3 queries) at the segment and node slice level.
+
+or specifically
+select * from SVL_S3QUERY where query = 5979;
+
+select * from SVL_S3QUERY_SUMMARY;
+select * from SVL_S3QUERY_SUMMARY where query = 5979;
+Use the SVL_S3QUERY_SUMMARY view to get a summary of all Amazon Redshift Spectrum queries 
+(S3 queries) that have been run on the system.
+
+===============
+
+
+
+
+
+
+
+
+
+
 
 
 

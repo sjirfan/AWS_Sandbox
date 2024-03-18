@@ -1,0 +1,52 @@
+Cloudwatch logs
+----------------
+Amazon Redshift logs all of the SQL operations, including connection attempts, queries, and 
+changes to your data warehouse. 
+These logs can be accessed via SQL queries against system tables(automatically), or optionally
+saved to a secure Amazon Simple Storage Service (Amazon S3) Amazon location, 
+or exported to Amazon CloudWatch. 
+
+You can view your Amazon Redshift cluster’s operational metrics on the Amazon Redshift console, 
+use CloudWatch, and query Amazon Redshift system tables directly from your cluster.
+
+Frm RS cluster > properties > edit audit logging
+Log export type: CloudWatch(recommended)
+Export logs: User log, Conection Log & User activity log
+
+--now using editor run some test queries
+create user cloudwatch_user with password 'Abcd$1234';
+drop user cloudwatch_user;
+
+Services > cloudwatch > logs> loggroups > select '/aws/redshift/cluster/myclusrs/userlog'
+--we can click on this log > select log stream ie myclusrs > look at log events (optionally filter events based on 
+time or other criteria)
+
+< back and select your /aws/redshift/cluster/myclusrs/userlog , 
+we can also 'view log insights' or 'start tailing' for latest events.
+
+Similarly look into other logs..
+
+==================
+Explore > metrics > all metrics > choose namespace Redshift > add/view metrics..
+
+==================
+in RS cluster
+--Query monitoring
+By default shows : top 100 queries by duration for last 1 hour
+Query history > Times scale shows the timeline.
+
+Now we can select one of the query runs and look in query details or query plan.
+
+we can also only problem steps, long running steps etc.
+If there is a possibility of optimizations, this will show up.
+
+We can also look at 'cluster metrics' & explore options..
+--------------------
+
+
+
+
+
+
+
+

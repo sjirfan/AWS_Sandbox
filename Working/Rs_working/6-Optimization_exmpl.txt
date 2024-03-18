@@ -1,0 +1,133 @@
+#--check if user is superuser
+--if your user is privileged with the result of the usesuper
+SELECT usename, usesysid, usesuper FROM pg_user WHERE usename=current_user;
+
+#STL_SCAN
+#Analyzes table scan steps for queries. 
+The step number for rows in this table is always 0 because a scan is the first step in a segment.
+It contains queries only on main clusters and not on concurrency scaling clusters.
+
+select * from  stl_scan;
+select * from stl_query ;
+select * from stv_tbl_perm;
+
+
+for example from listing table,
+--checking for consistency which creates a uniformly distributed dataset
+select  sellerid,count(*) 
+from listing GROUP BY 1 ORDER BY 2 DESC; 
+
+--how many values are assigned to each slice
+select * from stv_tbl_perm;
+
+select count(*) from listing;
+select * from stv_tbl_perm where name = 'listing';
+
+--how many values are assigned to each slice
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices FROM stv_tbl_perm WHERE name='listing'
+GROUP BY 1 ORDER BY 1;
+
+--long running queries
+select * from stv_inflight; --get the PID
+select PG_TERMINATE_BACKEND(1073930346)
+
+--to update statistics
+The ANALYZE operation updates the statistical metadata that the query planner uses to choose optimal plans.
+
+>analyze listing
+
+--Amazon Redshift monitors changes to your workload and automatically updates statistics 
+in the background. In addition, the COPY command performs an analysis automatically 
+when it loads data into an empty table.
+To turn off automatic analyze, set the auto_analyze parameter to false, by modifying 
+cluster's paramter group. (disabled for default parameter group)
+
+--To view details about the number of rows that have been inserted or deleted since the last ANALYZE
+select * from PG_STATISTIC_INDICATOR;
+
+--check if any node failure/disk failure
+
+============
+
+WLM
+Manual-we define queues and assign percentage of resources for each queue
+Auto - we define queues, system automatically assigns resources (priority-low,high,very high)
+
+
+WLM > create parameter group > give a name
+--check if default parameters show up..
+
+Modify workload queues >
+
+--shows default queues
+--Add queue <say 3 times to create 3 different queues>
+1st:
+BI_Wrk
+Concurrency scaling mode: auto
+Query priority: Highest
+User roles: %tableau%
+User groups: %tableau%
+Add rule form template/custom rule:
+rulimp1,scan row count(rows), >, 30000, Actions: log
+
+2nd: Batch_Wrk
+Concurrency scaling mode: auto
+Query priority: High
+User roles: None
+User groups: None
+Add rule form template/custom rule:
+rulimp2,....scan row count(rows), >, 10000, Actions: log
+rulimp3,.....rows joined > 1000, Action : change priority > highest
+
+Default queue> lowest..
+
+--to apply new paramter group for cluster > click on cluster > go to properties 
+>edit parameter group > let changes be applied and if required reboot.
+
+from editor> (unselect limit 100 rows)
+select * from listing order by sellerid desc;
+
+from query monitoring get the query id
+
+--look into STL_WLM_QUERY
+Contains a record of each attempted execution of a query in a service class handled by WLM.
+select * from STL_WLM_QUERY where query = '203245';
+
+--to extend create a dedicated user and group, create schema, grant permissions and then create queue for this usergroup
+
+create group testgrp;
+
+select* from pg_group;
+
+create user testusr in group testgrp password 'Abcd$1234';
+
+create schema testschema_forusr;
+
+alter schema testschema_forusr owner to "testusr";
+
+SELECT usename, groname 
+FROM pg_user, pg_group
+WHERE (pg_user.usesysid = ANY(pg_group.grolist))
+AND pg_group.groname in (SELECT DISTINCT pg_group.groname from pg_group);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
