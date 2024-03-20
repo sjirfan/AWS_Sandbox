@@ -1,0 +1,31 @@
+Needed access to AWS Cloud environment
+Option 1: Create a free account on AWS . This can be used to run Redshift serverless (300$ free) 
+          for every new account.
+          It can also be used to run paid services (redshift provisioned cluster, glue, s3, 
+	  cloudwatch, Athena and related IAM roles)
+Option 2: Using your own dev enviroment where you can access AWS services.
+
+--Needed accesses
+> a userid to login into aws account or root id or IAM ID
+  --this can have permissions attached
+    AmazonRedshiftAllCommandsFullAccess
+    AmazonS3FullAccess
+  This will also allow one to use AWS CLI from local machine to connect to services such as
+  Redshift, S3.
+> a role created for redshift with permissions
+  'AmazonRedshiftAllCommandsFullAccess'
+  --This role needs access to S3, Glue, Athena & Cloudwatch.
+	AmazonS3FullAccess --or provide access to specific buckets as per your environment
+	AWSGlueConsoleFullAccess
+	AWSGlueServiceRole
+	AmazonAthenaFullAccess (optional)
+	CloudWatchLogsFullAccess (optional)
+> a role created for Glue to connect to & work with S3
+	myroleforglue
+        --AmazonS3FullAccess --or provide access to specific buckets as per your environment
+	  AWSGlueConsoleFullAccess
+	  AWSGlueServiceRole
+	  AmazonAthenaFullAccess (optional)
+	  CloudWatchLogsFullAccess (optional)
+> optional a role for S3 to perform S3 batch operations	
+	 --AmazonS3FullAccess --or provide access to specific buckets as per your environment

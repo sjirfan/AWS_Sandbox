@@ -214,6 +214,14 @@ FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
 
 or using query editor v2 > right click on cluster > create connection > using database username > and load manually
 
+select count(*) from users_ajy;
+select count(*) from venue_ajy;
+select count(*) from category_ajy;
+select count(*) from date_ajy;
+select count(*) from event_ajy;
+select count(*) from listing_ajy;
+select count(*) from sales_ajy;
+
 -----------------
 Querying your data/analysis
 -- Find top 10 buyers by quantity.
