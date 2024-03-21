@@ -47,7 +47,6 @@ Datashares requiring assoiciation.
 
 Query editor >
 --create table 
-
 create table event(
 	eventid integer not null distkey,
 	venueid smallint not null,
@@ -103,7 +102,6 @@ From left menu > workgroup configuration
   --we can also add multiple 'query limits' from 'Manage query limits'.
 
 ----------------------------------
-
 create database mydb;
 select * from pg_database;
 create user myuser password 'Abcd$1234';
@@ -149,6 +147,7 @@ create table venue(
 note** usage of distkey and sortkey
 
 --
+--no distkey
 create table venue1(
 	venueid smallint not null ,
 	venuename varchar(100),
@@ -158,6 +157,8 @@ create table venue1(
     sortkey(venueid);
 
 --
+--multiple column sortkey
+
 create table venue2(
 	venueid smallint not null ,
 	venuename varchar(100),
@@ -188,7 +189,8 @@ select * from venue2 where venueid = 7 and venuecity = 'Toronto';
 yyyy ms (lesser than xxxx?)
 
 --multiple runs reduces the time taken..
---Using compression
+
+#Using compression
 https://aws.amazon.com/blogs/aws/data-compression-improvements-in-amazon-redshift/
 
 create table venue3(
@@ -225,9 +227,7 @@ create table venue4(
     sortkey auto ;
 
 select * from pg_table_def where tablename = 'venue4';
-
 ----------
-
 #--create listing table
 create table listing(
 	listid integer not null distkey,
@@ -243,6 +243,54 @@ create table listing2(
 	listid integer not null,
 	sellerid integer not null,
 	eventid integer not null,
+	dateid smallint not null,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp) ;
+
+select * from svv_table_info where "table" like 'listing%'
+
+SELECT name, slice, rows, COUNT(*) number_of_slices FROM stv_tbl_perm 
+WHERE name like '%ajy%'
+
+select "column", type, encoding, distkey, sortkey 
+from pg_table_def where tablename = 'listing_ajy';
+
+select slice, col, num_values as rows, minvalue, maxvalue
+from svv_diskusage
+where name='listing_ajy' and col=0 and rows>0
+order by slice, col;
+
+select * from listing_ajy where listid > 1315 limit 1000;
+xxxx ms
+select * from listing_ajy where listid > 1315 limit 1000;
+xxxx ms
+
+SELECT listid, count(*) FROM listing_ajy GROUP BY listid order by listid desc;
+SELECT eventid, count(*) FROM listing_ajy GROUP BY eventid order by count desc;
+SELECT sellerid, count(*) FROM listing_ajy GROUP BY sellerid order by count desc;
+
+--look at count of records based on these columns to decide on best distkey or let system decide as it did in 'listing2_ajy'
+Note**
+Each node must aggregate its own rows first; then, the leader node has to aggregate the results again. 
+That's why we see two "Aggregate" steps for a query.
+To avoid large amount of data being sent to leader node over network, we can put all rows belonging to an ID or group
+by using right distkey.
+To collocate all relevant rows in a single node, use the distkey on a column which will be part of your queries or grupby queries.
+
+Note**
+If too many rows land onto a single node, it is the so-called skew. When such a skew occurs, the total query processing 
+time takes much longer because the performance is capped by the slowest processing node; 
+i.e., the query cannot be spread across multiple nodes. 
+In this (extreme) case, almost all the rows were processed by a single node. 
+That is why the query may take longer than the query made against the table without a DISTKEY.
+
+--test
+create table listing3(
+	listid integer not null,
+	sellerid integer not null,
+	eventid integer not null,
 	dateid smallint not null  sortkey,
 	numtickets smallint not null,
 	priceperticket decimal(8,2),
@@ -250,7 +298,6 @@ create table listing2(
 	listtime timestamp) diststyle key distkey (sellerid);
 
 analyze compression listing;
-
 
 --Load data into both tables
 COPY dev.public.listing2 FROM 's3://buck1mar/listings_pipe.txt' 

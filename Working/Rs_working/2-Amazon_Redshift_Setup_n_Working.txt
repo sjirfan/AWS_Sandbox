@@ -389,8 +389,63 @@ select * from STV_NODE_STORAGE_CAPACITY;
 --information about the permanent tables in Amazon Redshift, 
   including temporary tables created by a user for the current session. 
 --get the table_id (=id) from SVV_TABLE_INFO
+
 select * from STV_TBL_PERM;
 select * from STV_TBL_PERM  where id = 106406;
+
+--get tableIDs for each table
+select distinct id, name
+from stv_tbl_perm order by name;
+
+--To determine the number of blocks used by each column in the any table
+select col, count(*)
+from stv_blocklist, stv_tbl_perm
+where stv_blocklist.tbl = stv_tbl_perm.id
+and stv_blocklist.slice = stv_tbl_perm.slice
+and stv_tbl_perm.name = 'listing_ajy'
+group by col
+order by col;
+
+--checking for consistency which creates a uniformly distributed dataset
+select  sellerid,count(*) 
+from listing GROUP BY 1 ORDER BY 2 DESC; 
+
+--how many values are assigned to each slice
+
+select count(*) from listing;
+select * from stv_tbl_perm where name = 'listing_ajy';
+
+--how many values are assigned to each slice
+
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices, slice FROM stv_tbl_perm WHERE name='listing_ajy'
+GROUP BY 1,3 ORDER BY 1;
+
+or
+
+SELECT name, slice, rows, COUNT(*) number_of_slices FROM stv_tbl_perm WHERE name='venue_ajy' or name = 'listing_ajy'
+GROUP BY 1,2,3 ORDER BY 3 desc;
+
+Note**
+The ROWS column includes counts of deleted rows that have not been vacuumed (or have been vacuumed but with the SORT ONLY option). 
+Therefore, the SUM of the ROWS column in the STV_TBL_PERM table might not match the COUNT(*) result when you query 
+
+for example:
+delete from venue
+where venueid in (1,2);
+select count(*) from venue;
+
+&
+select trim(name) tablename, sum(rows)
+from stv_tbl_perm where name='venue' group by name;
+
+--To synchronize the data in STV_TBL_PERM, run a full vacuum
+vacuum venue;
+
+--now try again
+select trim(name) tablename, sum(rows)
+from stv_tbl_perm
+where name='venue'
+group by name;
 
 #STV_SLICES
 --the current mapping of a slice to a node. Type field is for internal use only.
@@ -425,20 +480,6 @@ Note**
 --For a listing and information on all statements run , 
       you can also query the STL_DDLTEXT and STL_UTILITYTEXT views
 --For a listing of all statements run , you can query the SVL_STATEMENTTEXT view.
-
-for example from listing table,
---checking for consistency which creates a uniformly distributed dataset
-select  sellerid,count(*) 
-from listing GROUP BY 1 ORDER BY 2 DESC; 
-
---how many values are assigned to each slice
-select * from stv_tbl_perm;
-select count(*) from listing;
-select * from stv_tbl_perm where name = 'listing';
-
---how many values are assigned to each slice
-SELECT rows/15 assigned_values, COUNT(*) number_of_slices FROM stv_tbl_perm WHERE name='listing'
-GROUP BY 1 ORDER BY 1;
 
 --long running queries
 select * from stv_inflight; --get the PID
