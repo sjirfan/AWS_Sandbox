@@ -1,36 +1,3 @@
-#--check if user is superuser
---if your user is privileged with the result of the usesuper
-SELECT usename, usesysid, usesuper FROM pg_user WHERE usename=current_user;
-
-#STL_SCAN
-#Analyzes table scan steps for queries. 
-The step number for rows in this table is always 0 because a scan is the first step in a segment.
-It contains queries only on main clusters and not on concurrency scaling clusters.
-
-select * from  stl_scan;
-select * from stl_query ;
-select * from stv_tbl_perm;
-
-
-for example from listing table,
---checking for consistency which creates a uniformly distributed dataset
-select  sellerid,count(*) 
-from listing GROUP BY 1 ORDER BY 2 DESC; 
-
---how many values are assigned to each slice
-select * from stv_tbl_perm;
-
-select count(*) from listing;
-select * from stv_tbl_perm where name = 'listing';
-
---how many values are assigned to each slice
-SELECT rows/15 assigned_values, COUNT(*) number_of_slices FROM stv_tbl_perm WHERE name='listing'
-GROUP BY 1 ORDER BY 1;
-
---long running queries
-select * from stv_inflight; --get the PID
-select PG_TERMINATE_BACKEND(1073930346)
-
 --to update statistics
 The ANALYZE operation updates the statistical metadata that the query planner uses to choose optimal plans.
 
@@ -46,7 +13,6 @@ cluster's paramter group. (disabled for default parameter group)
 select * from PG_STATISTIC_INDICATOR;
 
 --check if any node failure/disk failure
-
 ============
 
 WLM

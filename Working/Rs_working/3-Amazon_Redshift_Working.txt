@@ -1,3 +1,10 @@
+#Additional user:
+create group tstgroup;
+create user tstuser1 in group tstgroup password 'Abcd$1234';
+grant all privileges on all tables in schema public to tstuser1;
+
+--we can also make newuser as owner of this schema or create a new schema
+
 #Setting up serverless redshift
 -----------------------
 Try redshift serverless > 
@@ -175,7 +182,6 @@ load same data into venue2 and check elapsed time (~25s)
 select count(*) from venue;
 select count(*) from venue2;
 
-
 select * from venue where venueid = 7 and venuecity = 'Toronto';
 xxxx ms
 select * from venue2 where venueid = 7 and venuecity = 'Toronto';
@@ -288,40 +294,7 @@ iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAcc
 
 --to overwrite existing files
 allowoverwrite
-
 ==========================
-System catelog tables
-PG_*
-
-System monitoring tables  (but for provisioned only clusters)
-
-#STL views are generated from logs that have been persisted to disk to provide a history of the system.
-#STV tables are virtual system tables that contain snapshots of the current system data. 
- They are based on transient in-memory data and are not persisted to disk-based logs or regular tables.
-
---using STV tables
---cancelling a long running query
-select pid,trim(user_name),starttime,substring(query,1,20) from stv_recents where status = 'Running';
-cancel pid;
-abort or rollback;
-
---check if following permissions are added (if needed)
-AmazonRedshiftQueryEditorV2FullAccess
-
-#SVCS views provide details about queries on both the main and concurrency scaling clusters.
-
-#SVL views provide details about queries on main clusters.
-
-#SYS - monitoring views
-used to monitor query and workload usage for provisioned clusters and serverless workgroups.
-
-#SVV - metadata views
-Contain information about database objects with references to transient STV tables.
-select * from svv_tables ;
-select * from svv_tables where table_name like 'venue%';
-
-
-
 
 
 

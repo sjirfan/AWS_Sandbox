@@ -35,6 +35,10 @@ arn:aws:iam::381492xxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-202
 Test your connection
 Amazon Redshift retains a great deal of metadata about the various databases within a cluster and finding a 
 list of tables is no exception to this rule.
+
+--check if following permissions are added (if needed)
+AmazonRedshiftQueryEditorV2FullAccess
+
 The most useful object for this task is the PG_TABLE_DEF table, which as the name implies, 
 contains table definition information. Note: The PG_ prefix is just a holdover from PostgreSQL, 
 the database technology from which Amazon Redshift was developed.
@@ -47,13 +51,7 @@ FROM
 
 For better or worse, PG_TABLE_DEF contains information about everything in the system, 
 so the results of such an open query will be massive, but should give you an idea of what 
-PG_TABLE_DEF is capable of:
-schemaname  tablename                   column          type            encoding distkey sortkey notnull
---------------------------------------------------------------------------------------------------------
-pg_catalog  padb_config_harvest         name            character(136)  none     false   0       true
-pg_catalog  padb_config_harvest         harvest         integer         none     false   0       true
-pg_catalog  padb_config_harvest         archive         integer         none     false   0       true
-pg_catalog  padb_config_harvest         directory       character(500)  none     false   0       true
+PG_TABLE_DEF is capable of
 
 To limit the results to user-defined tables, it’s important to specify the schemaname column to return 
 only results which are public:
@@ -65,10 +63,7 @@ we’ll need to filter the above results by retrieving DISTINCT items from withi
 
 SELECT
   DISTINCT tablename FROM PG_TABLE_DEF WHERE schemaname = 'pg_catalog';
-
-This returns only the unique tables within the system:
-
-create your bucket (buck1mar) and then upload sample date
+--This returns only the unique tables within the system:
 
 --creating tables
 create table users(
@@ -145,15 +140,14 @@ create table sales(
 	saletime timestamp);
 
 
-check for tables:
+--check for tables:
 SELECT   *  FROM   PG_TABLE_DEF where tablename = 'venue';
 SELECT   *  FROM   PG_TABLE_DEF where schemaname = 'public';
 
-Lets upload data to redshift tables from s3:
-
-Download file tickitdb.zip that contains individual sample data files. 
-Unzip and load the individual files to a tickit folder in your Amazon S3 bucket in your AWS Region.
-Edit the COPY commands in this tutorial to point to the files in your Amazon S3 bucket.
+--Lets upload data to redshift tables from s3:
+--Download files from tickit folder that contains individual sample data files. 
+--Load files in your Amazon S3 bucket in your AWS Region.
+--Edit the COPY commands to point to the files in your Amazon S3 bucket.
 
 --copy data from s3 
 COPY users 
@@ -171,7 +165,7 @@ IGNOREHEADER 0
 REGION 'eu-central-1'
 IAM_ROLE default;
 
-error: Load into table 'event' failed. Check 'sys_load_error_detail' system table for details. 
+--error: Load into table 'event' failed. Check 'sys_load_error_detail' system table for details. 
 select * from sys_load_error_detail
 --shows: Invalid digit, Value 'e', Pos 0, Type: Integer  
 --issue with file
@@ -197,7 +191,7 @@ IAM_ROLE '<your role arn or default>';
 
 --if when loading for listing any error, look into
 select * from sys_load_error_detail
-Invalid timestamp format or value [MM/DD/YYYY HH:MI:SS]
+--Invalid timestamp format or value [MM/DD/YYYY HH:MI:SS]
 
 --try again
 COPY dev.public.listing FROM 's3://buck1mar/listings_pipe.txt' 
@@ -212,7 +206,14 @@ COPY dev.public.venue FROM 's3://buck1mar/venue_pipe.txt'
 IAM_ROLE '<your role arn or default>' 
 FORMAT AS CSV DELIMITER '|' QUOTE '"' REGION AS 'eu-central-1'
 
-or using query editor v2 > right click on cluster > create connection > using database username > and load manually
+--or using query editor v2 > right click on cluster > create connection > 
+--using database username > and load manually
+
+--since I added _ajy as suffix to the above tables while creating
+
+#--check if user is superuser
+--if your user is privileged with the result of the usesuper
+SELECT usename, usesysid, usesuper FROM pg_user WHERE usename=current_user;
 
 select count(*) from users_ajy;
 select count(*) from venue_ajy;
@@ -222,7 +223,8 @@ select count(*) from event_ajy;
 select count(*) from listing_ajy;
 select count(*) from sales_ajy;
 
------------------
+---sample queries--------------
+
 Querying your data/analysis
 -- Find top 10 buyers by quantity.
 SELECT firstname, lastname, total_quantity 
@@ -232,6 +234,10 @@ FROM   (SELECT buyerid, sum(qtysold) total_quantity
         ORDER BY total_quantity desc limit 10) Q, users
 WHERE Q.buyerid = userid
 ORDER BY Q.total_quantity desc;
+
+Note** Prepend 'explain' before query to look at explain results and 
+       what happened behind the scenes.
+       --we can also find this information from 'query monitoring' in console.
 
 -- Find events in the 99.9 percentile in terms of all time gross sales.
 SELECT eventname, total_price 
@@ -275,21 +281,13 @@ ORDER BY total_price desc;
 
 & so on...
 
-select *
-from stl_connection_log
-where event = 'initiating session'
-and pid not in
-(select pid from stl_connection_log
-where event = 'disconnecting session')
-order by 1 desc;
+----Sample queries end-----------------
+=================================================
+#System catalog tables
+PG_*
 
-======================
---Test setting up 'Amazon Redshift Serverless'
-
-======================
-System catalog tables
-
-The system catalogs store schema metadata, such as information about tables and columns. System catalog tables have a PG prefix.
+The system catalogs store schema metadata, such as information about tables and columns. 
+System catalog tables have a PG prefix.
 
 PG_ATTRIBUTE_INFO
 --Amazon Redshift system view built on the PostgreSQL catalog table PG_ATTRIBUTE and the internal catalog table PG_ATTRIBUTE_ACL.
@@ -331,5 +329,121 @@ PG_USER_INFO
 --view that shows user information, such as user ID and password expiration time.
 
 ==================
+--Look into other important catalog/system tables
+#System monitoring tables  (but for provisioned only clusters)
+#STL views are generated from logs that have been persisted to disk to provide a history of the system.
+STL* 
 
+#SVV - metadata views
+Contain information about database objects with references to transient STV tables.
+select * from SVV_TABLES ;
+select * from SVV_TABLES where table_name like 'venue%';
 
+#SYS - monitoring views
+used to monitor query and workload usage for provisioned clusters and serverless workgroups.
+
+#STV tables are virtual system tables that contain snapshots of the current system data. 
+ They are based on transient in-memory data and are not persisted to disk-based logs or regular tables.
+--using STV tables
+--cancelling a long running query
+select pid,trim(user_name),starttime,substring(query,1,20) from stv_recents where status = 'Running';
+cancel pid;
+abort or rollback;
+
+#SVCS views provide details about queries on both the main and concurrency scaling clusters.
+
+#SVL views provide details about queries on main clusters.
+
+--Examples
+#SVV_TABLE_INFO
+Shows summary information for tables in the database. 
+The view filters system tables and shows only user-defined tables.
+
+select * from SVV_TABLE_INFO ;
+select * from SVV_TABLE_INFO WHERE "TABLE" like '%ajy%';
+
+The SVV_TABLE_INFO view summarizes information 
+from the STV_BLOCKLIST, STV_NODE_STORAGE_CAPACITY, STV_TBL_PERM, and STV_SLICES system tables.
+
+#STV_BLOCKLIST
+--contains the number of 1 MB disk blocks that are used by each slice, table, or column in a database.
+--Every table you create has three hidden columns appended to it: INSERT_XID, DELETE_XID, and ROW_ID (OID)
+--get the table_id (=tbl) from SVV_TABLE_INFO
+Note** contains
+minvalue: Minimum data value of the block. Stores first eight characters as 64-bit integer 
+          for non-numeric data. Used for disk scanning.
+maxvalue: Maximum data value of the block. Stores first eight characters as 64-bit integer 
+          for non-numeric data. Used for disk scanning.
+sb_pos: Internal Amazon Redshift identifier for super block position on the disk.
+pinned: If the block is pinned into memory as part of pre-load. 0 = false; 1 = true. Default is false.
+on_disk: If the block is automatically stored on disk. 0 = false; 1 = true. Default is false.
+unsorted: If a block is unsorted. 0 = false; 1 = true. Default is true.
+num_values: Number of values contained on the block.
+
+select * from STV_BLOCKLIST where "tbl" = 106406;
+
+#STV_NODE_STORAGE_CAPACITY
+select * from STV_NODE_STORAGE_CAPACITY;
+
+#STV_TBL_PERM
+--information about the permanent tables in Amazon Redshift, 
+  including temporary tables created by a user for the current session. 
+--get the table_id (=id) from SVV_TABLE_INFO
+select * from STV_TBL_PERM;
+select * from STV_TBL_PERM  where id = 106406;
+
+#STV_SLICES
+--the current mapping of a slice to a node. Type field is for internal use only.
+select * FROM STV_SLICES;
+
+#STV_PARTITIONS
+-- to find out the disk speed performance and disk utilization for Amazon Redshift.
+-- contains one row per node per logical disk volume
+select * FROM STV_PARTITIONS;
+
+#STL_SCAN
+--Analyzes table scan steps for queries. 
+The step number for rows in this table is always 0 because a scan is the first step in a segment.
+It contains queries only on main clusters and not on concurrency scaling clusters.
+select * from  STL_SCAN;
+
+#STL_CONNECTION_LOG
+--Logs authentication attempts and connections and disconnections.
+select * from stl_connection_log
+where event = 'initiating session'
+and pid not in
+(select pid from stl_connection_log
+where event = 'disconnecting session')
+order by 1 desc;
+
+#STL_QUERY
+--The STL_QUERY and STL_QUERYTEXT views only contain information about queries
+select * from STL_QUERY ;
+select * from STL_QUERY_HISTORY;
+
+Note**
+--For a listing and information on all statements run , 
+      you can also query the STL_DDLTEXT and STL_UTILITYTEXT views
+--For a listing of all statements run , you can query the SVL_STATEMENTTEXT view.
+
+for example from listing table,
+--checking for consistency which creates a uniformly distributed dataset
+select  sellerid,count(*) 
+from listing GROUP BY 1 ORDER BY 2 DESC; 
+
+--how many values are assigned to each slice
+select * from stv_tbl_perm;
+select count(*) from listing;
+select * from stv_tbl_perm where name = 'listing';
+
+--how many values are assigned to each slice
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices FROM stv_tbl_perm WHERE name='listing'
+GROUP BY 1 ORDER BY 1;
+
+--long running queries
+select * from stv_inflight; --get the PID
+select PG_TERMINATE_BACKEND(1073930346)
+
+======================
+
+--Test setting up 'Amazon Redshift Serverless' > WG > NS
