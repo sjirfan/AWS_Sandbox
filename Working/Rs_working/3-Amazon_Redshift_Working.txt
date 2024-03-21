@@ -203,9 +203,17 @@ create table venue3(
 
 select * from pg_table_def where tablename = 'venue3';
 
+alter table venue3 alter column venuename encode lzo;
+alter table venue3 alter column venuecity encode zstd;
+
+select * from pg_table_def where tablename = 'venue3';
+
 --Testing ANALYZE COMPRESSION
 Performs compression analysis and produces a report with the suggested compression encoding for the tables analyzed. 
-For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.
+For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.(if encoding was explicitly
+chosen)
+
+analyze compression venue3;
 
 select count(*) from venue;
 select count(*) from venue3;
@@ -296,8 +304,6 @@ create table listing3(
 	priceperticket decimal(8,2),
 	totalprice decimal(8,2),
 	listtime timestamp) diststyle key distkey (sellerid);
-
-analyze compression listing;
 
 --Load data into both tables
 COPY dev.public.listing2 FROM 's3://buck1mar/listings_pipe.txt' 
