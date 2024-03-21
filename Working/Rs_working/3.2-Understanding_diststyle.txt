@@ -1,0 +1,69 @@
+Understanding  diststyle
+create table listing_1_ajy(
+	listid integer not null,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp) diststyle key distkey (eventid);
+
+-------------
+create table listing_2_ajy(
+	listid integer not null,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp) diststyle all;
+-------------
+create table listing_3_ajy(
+	listid integer not null,
+	sellerid integer not null,
+	eventid integer not null,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp) diststyle even;
+
+skew_rows:
+Ratio of the number of rows in the slice with the most rows to the number of rows in the slice with the fewest rows.
+
+select count(*) from listing_1_ajy;
+select count(*) from listing_2_ajy;
+select count(*) from listing_3_ajy;
+Select diststyle, skew_rows, "table"  from svv_table_info where "table"='listing_1_ajy';
+Select diststyle, skew_rows, "table"  from svv_table_info where "table"='listing_2_ajy';
+Select diststyle, skew_rows, "table"  from svv_table_info where "table"='listing_3_ajy';
+
+check columns to block
+select col, count(*)
+from stv_blocklist, stv_tbl_perm
+where stv_blocklist.tbl = stv_tbl_perm.id
+and stv_blocklist.slice = stv_tbl_perm.slice
+and stv_tbl_perm.name = 'listing_3_ajy'
+group by col
+order by col;
+
+--check distribution
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices, slice FROM stv_tbl_perm WHERE name='listing_1_ajy'
+GROUP BY 1,3 ORDER BY 1;
+
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices, slice FROM stv_tbl_perm WHERE name='listing_2_ajy'
+GROUP BY 1,3 ORDER BY 1;
+
+SELECT rows/15 assigned_values, COUNT(*) number_of_slices, slice FROM stv_tbl_perm WHERE name='listing_3_ajy'
+GROUP BY 1,3 ORDER BY 1;
+
+query tables to validate the diffrence
+select * from listing_1_ajy where eventid > 5420 order by numtickets desc;
+select * from listing_2_ajy where eventid > 5420 order by numtickets desc;
+select * from listing_3_ajy where eventid > 5420 order by numtickets desc;
+
+
+
+
