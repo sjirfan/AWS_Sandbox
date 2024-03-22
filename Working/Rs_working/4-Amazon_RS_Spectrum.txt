@@ -103,7 +103,8 @@ order by count desc;
 >>The maximum duration and average duration of Redshift Spectrum requests. Long-running requests might indicate a bottleneck.
 
 select * from SVL_S3QUERY;
-Use the SVL_S3QUERY view to get details about Redshift Spectrum queries (S3 queries) at the segment and node slice level.
+Use the SVL_S3QUERY view to get details about Redshift Spectrum queries 
+(S3 queries) at the segment and node slice level.
 
 or specifically
 select * from SVL_S3QUERY where query = 5979;

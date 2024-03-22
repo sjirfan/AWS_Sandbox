@@ -1,3 +1,157 @@
+#Vacuum:
+
+Commands:
+
+VACUUM [ FULL | SORT ONLY | DELETE ONLY | REINDEX | RECLUSTER ] [ [ table_name] [TO THRESHOLD PERCENT] [BOOST]]
+
+--reclaim space and resort rows in all tables based on 95% vaccum threshold
+> vacuum
+
+--reclaim space and re-sort rows for a specific table
+> vacuum venue2 to 100 percent
+
+--Re-sort rows in the venue2 table only if fewer than 75% of rows are already sorted
+vacuum sort only venue2 to 75 percent
+
+--reclaim space in the venue2 table such that atleast 75% of the remaining rows aren't marked for deletion following the vaccum
+vacuum delete only venue2 to 75 percent;
+
+Scenario testing:
+
+Session 1:
+create table test_vac (a varchar(50), b int);
+
+insert into test_vac values ('a',1),('b',2),('c',3),('d',4);
+
+select tbl_rows from svv_table_info where "table" = 'test_vac';
+
+--Open an explicit transaction (supposedly long running transaction) in another session
+Session 2:
+Begin;
+
+in session 1:
+--to check for long-running transactions on cluster (or transactions that have not closed)
+
+select *,datediff(s,txn_start,getdate())/86400||' days '||datediff(s,txn_start,getdate())%86400/3600||
+'hrs '||datediff(s,txn_start,getdate())%3600/60||' mins '||datediff(s,txn_start,getdate())%60||' secs' duration 
+from svv_transactions where lockable_object_type='transactionid' and  pid<>pg_backend_pid() order by 3;
+
+--check for the transaction
+select pid, xid, trim(label), starttime, endtime, trim(text) from svl_statementtext where xid = <> order by starttime, sequence;
+
+--delete some data
+delete from test_vac where a in ('a','b','c');
+
+--select * from test_vac;
+
+--to check if rows were deleted from redshift table
+select a.query, a.xid, trim(c.name) tablename, b.deleted_rows, a.starttime, a.endtime
+from stl_query a 
+join (select query, tbl, sum(rows) deleted_rows from stl_delete group by 1,2) b 
+on a.query = b.query
+join (select id, name from stv_tbl_perm group by 1,2) c 
+on c.id = b.tbl 
+where a.xid in (select distinct xid from stl_commit_stats)
+and trim(c.name) = 'test_vac'
+order by a.starttime;
+
+--run vaccum
+vacuum delete only test_vac;
+
+--check for number f rows again
+select tbl_rows from svv_table_info where "table" = 'test_vac';
+Note** vaccum might not have reclaimed space and thus different number of rows.
+
+--so we can wait for long running transaction to complete or cancel it by running terminate.
+in Session 2: 
+Begin;
+End;
+
+--in session 1: run vaccum again
+vacuum delete only test_vac;
+select tbl_rows from svv_table_info where "table" = 'test_vac';
+
+--to check if any sessions are holding any locks
+select a.txn_owner, a.txn_db, a.xid, a.pid, a.txn_start, a.lock_mode, a.relation as table_id,nvl(trim(c."name"),
+d.relname) as tablename, a.granted,b.pid as blocking_pid ,datediff(s,a.txn_start,getdate())/86400||' days '||datediff(s,a.txn_start,
+getdate())%86400/3600||' hrs '||datediff(s,a.txn_start,getdate())%3600/60||' mins '||datediff(s,a.txn_start,getdate())%60||' secs' 
+as txn_duration from svv_transactions a 
+left join (select pid,relation,granted from pg_locks group by 1,2,3) b 
+on a.relation=b.relation and a.granted='f' and b.granted='t' 
+left join (select * from stv_tbl_perm where slice=0) c 
+on a.relation=c.id 
+left join pg_class d on a.relation=d.oid
+where  a.relation is not null;
+
+--If the result in the granted column is f (false), then a transaction in another session is holding the lock. 
+The blocking_pid column shows the process ID of the session that's holding the lock. 
+
+---------------
+#Deep copy
+1) Using the Original Table & DDL Command
+Steps to Create Deep Copy for Amazon Redshift Copy Table
+
+Using the CREATE Table DDL, create a copy of the parent table.
+Use the INSERT command to insert the data from the parent table to the newly created table.
+Drop the parent table.
+Use the ALTER TABLE command to rename the new table with the original name.
+Let’s understand the above steps with a real-time example. 
+Consider a table of sales that contains the sales records of the products as shown in the code below:
+
+create table sales(
+	salesid integer not null,
+	listid integer not null distkey,
+	sellerid integer not null,
+	buyerid integer not null,
+	eventid integer not null,
+	dateid smallint not null sortkey,
+	qtysold smallint not null,
+	pricepaid decimal(8,2),
+	commission decimal(8,2),
+	saletime timestamp);
+
+--Load sample data
+  
+INSERT INTO SALES_COPY (SELECT * FROM SALES) 
+Once the data is completely copied to the SALES_COPY table, drop the original table as shown in the code below:
+
+DROP TABLE SALES;
+Rename the new table with the old table as shown in the code below:
+
+ALTER TABLE SALES_COPY RENAME TO SALES;
+
+2) Using CREATE TABLE LIKE Command
+This method is useful when the create table DDL is not available. This method uses the CREATE TABLE LIKE command that inherits the encoding, 
+distribution key, sort key, etc., from the old table to the new table. It doesn’t inherit the old table’s primary and foreign keys.
+
+Steps to Create Deep Copy for Amazon Redshift Copy Table
+
+Using the CREATE TABLE LIKE command, create a copy of the parent table.
+Use the INSERT command to insert the data from the parent table into the newly created table.
+Drop the parent table.
+Rename the new table with the old table
+
+3) Amazon Redshift Copy Table: Using a Temporary Table & Truncating Original Table
+This method is useful when dependencies are in the parent table and cannot be deleted. Using the temporary table approach improves 
+the performance, but also there is a risk of losing data.
+The temporary table is session-based. Hence the temporary table will automatically drop when the current session ends. 
+Therefore this method produces a risk of losing data if anything goes wrong.
+
+Steps to perform Deep Copy for Amazon Redshift Copy Table
+
+Use CREATE TABLE AS SELECT command (CTAS) to create a temporary table similar to the parent table.
+Truncate the parent table.
+Use the INSERT command to insert the data from the temporary table into the parent table.
+Let us understand the above steps with a real-time example.  
+
+
+CREATE TEMP TABLE SALES_TEMP AS (SELECT * FROM SALES) 
+TRUNCATE SALES;
+INSERT INTO SALES (SELECT * FROM SALES_TEMP);
+DROP TABLE SALES_TEMP;
+
+---------------
+#Analyze
 --to update statistics
 The ANALYZE operation updates the statistical metadata that the query planner uses to choose optimal plans.
 
