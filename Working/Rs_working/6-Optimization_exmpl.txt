@@ -86,6 +86,19 @@ where  a.relation is not null;
 --If the result in the granted column is f (false), then a transaction in another session is holding the lock. 
 The blocking_pid column shows the process ID of the session that's holding the lock. 
 
+Other information:
+select * from stl_vacuum;
+select * from svv_vacuum_progress;
+
+select * from SVV_VACUUM_SUMMARY;
+select * from sys_vacuum_history;
+
+select * from svv_table_info where "table" = 'listing_1_ajy';
+vacuum sort only listing_1_ajy;
+select * from svv_diskusage  where tbl = 119886;
+select * from stv_blocklist where tbl = 119886;
+
+--Run ANALYZE based on the alerts recorded in stl_explain & stl_alert_event_log.
 ---------------
 #Deep copy
 1) Using the Original Table & DDL Command
