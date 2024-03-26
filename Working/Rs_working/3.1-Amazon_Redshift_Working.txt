@@ -137,6 +137,44 @@ select eventname,count(*) from event group by eventname;
 explain select eventname,count(*) from event group by eventname;
 enable explain from menu on top to look into graph.
 
+#Using compression
+https://aws.amazon.com/blogs/aws/data-compression-improvements-in-amazon-redshift/
+
+create table venue3(
+	venueid smallint not null encode az64 ,
+	venuename varchar(100) encode bytedict,
+	venuecity varchar(30) encode bytedict,
+	venuestate char(2) encode lzo,
+	venueseats integer encode az64)
+ sortkey(venueid,venuecity);
+
+select * from pg_table_def where tablename = 'venue3';
+
+alter table venue3 alter column venuename encode lzo;
+alter table venue3 alter column venuecity encode zstd;
+
+select * from pg_table_def where tablename = 'venue3';
+
+--Testing ANALYZE COMPRESSION
+Performs compression analysis and produces a report with the suggested compression encoding for the tables analyzed. 
+For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.(if encoding was explicitly
+chosen)
+
+analyze compression venue3;
+
+select count(*) from venue;
+select count(*) from venue3;
+
+select * from venue;
+
+--querying tables and using columns based on distkey,sortkey and also columns which have compressions.
+--check which compression gives a better performance.
+explain select * from venue where venueid > 25 and venuecity = 'Orlando';
+explain select * from venue3 where venueid > 25 and venuecity = 'Orlando';
+
+--look at elapsed time and explain result.
+
+#understanding distkey/sortkey or both
 --create venue table if not created already.
 create table venue(
 	venueid smallint not null distkey sortkey,
@@ -146,7 +184,6 @@ create table venue(
 	venueseats integer);
 note** usage of distkey and sortkey
 
---
 --no distkey
 create table venue1(
 	venueid smallint not null ,
@@ -156,7 +193,6 @@ create table venue1(
 	venueseats integer)
     sortkey(venueid);
 
---
 --multiple column sortkey
 
 create table venue2(
@@ -189,41 +225,6 @@ select * from venue2 where venueid = 7 and venuecity = 'Toronto';
 yyyy ms (lesser than xxxx?)
 
 --multiple runs reduces the time taken..
-
-#Using compression
-https://aws.amazon.com/blogs/aws/data-compression-improvements-in-amazon-redshift/
-
-create table venue3(
-	venueid smallint not null encode az64 ,
-	venuename varchar(100) encode bytedict,
-	venuecity varchar(30) encode bytedict,
-	venuestate char(2) encode lzo,
-	venueseats integer encode az64)
- sortkey(venueid,venuecity);
-
-select * from pg_table_def where tablename = 'venue3';
-
-alter table venue3 alter column venuename encode lzo;
-alter table venue3 alter column venuecity encode zstd;
-
-select * from pg_table_def where tablename = 'venue3';
-
---Testing ANALYZE COMPRESSION
-Performs compression analysis and produces a report with the suggested compression encoding for the tables analyzed. 
-For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.(if encoding was explicitly
-chosen)
-
-analyze compression venue3;
-
-select count(*) from venue;
-select count(*) from venue3;
-
-select * from venue;
-
-explain select * from venue where venueid > 55 and venuecity = 'orlando';
-explain select * from venue3 where venueid > 55 and venuecity = 'orlando';
-
---look at elapsed time and explain result.
 
 <optional>
 create table venue4(

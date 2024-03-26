@@ -181,6 +181,23 @@ select * from PG_STATISTIC_INDICATOR;
 
 --check if any node failure/disk failure
 ============
+--Materialized views
+Drop materialized view buyersdata;
+create MATERIALIZED view buyersdata auto refresh yes AS
+  (
+SELECT userid, firstname, lastname, total_quantity 
+FROM   (SELECT buyerid, sum(qtysold) total_quantity
+        FROM  sales_ajy
+        GROUP BY buyerid
+        ORDER BY total_quantity desc limit 10) Q, users_ajy
+WHERE Q.buyerid = userid
+) ;
+
+select * from buyersdata;
+
+--refresh materialized view buyersdata;
+
+============
 
 WLM
 Manual-we define queues and assign percentage of resources for each queue

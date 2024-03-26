@@ -382,6 +382,9 @@ num_values: Number of values contained on the block.
 
 select * from STV_BLOCKLIST where "tbl" = 106406;
 
+select * from pg_table_def where tablename like '%_aj'; --encoding, distkey, sortkey
+select * from svv_table_info  where "table" like '%_aj'; --encoded, diststyle , sortkey, unsorted, tbl_rows, skew_rows
+
 #STV_NODE_STORAGE_CAPACITY
 select * from STV_NODE_STORAGE_CAPACITY;
 
@@ -405,6 +408,13 @@ and stv_blocklist.slice = stv_tbl_perm.slice
 and stv_tbl_perm.name = 'listing_ajy'
 group by col
 order by col;
+
+--or we can
+select a.slice,a.col,b.block_count, b.rows
+from stv_blocklist a, stv_tbl_perm b
+where a.tbl = b.id
+and a.slice = b.slice
+and b.name = 'listing_aj' and a.slice = 1;
 
 --checking for consistency which creates a uniformly distributed dataset
 select  sellerid,count(*) 
