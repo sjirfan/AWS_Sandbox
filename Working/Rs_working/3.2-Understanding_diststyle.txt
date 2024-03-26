@@ -64,6 +64,47 @@ select * from listing_1_ajy where eventid > 5420 order by numtickets desc;
 select * from listing_2_ajy where eventid > 5420 order by numtickets desc;
 select * from listing_3_ajy where eventid > 5420 order by numtickets desc;
 
+-----------------
+--Unload data to S3
+unload ('select * from listing') to 's3://buck1mar/listing_bckup'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+json
+
+Note** creates multiple files here with prefix as listing_backup..
+Amazon Redshift splits the results of a select statement across a set of files, one or more files per node slice, 
+to simplify parallel reloading of the data. Alternatively, you can specify that UNLOAD should write the results serially to 
+one or more files by adding the PARALLEL OFF option. You can limit the size of the files in Amazon S3 by specifying the MAXFILESIZE parameter. 
+UNLOAD automatically encrypts data files using Amazon S3 server-side encryption (SSE-S3).
+
+By default, UNLOAD writes data in parallel to multiple files, according to the number of slices in the cluster
+
+unload ('select * from listing') to 's3://buck1mar/listing_bckup2'
+iam_role 'arn:aws:iam::38149xxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+parallel off
+
+other options:
+--to divide data into equal size files
+maxfilesize xx mb;
+
+--to create a manifest file that lists the unload files
+The manifest is a text file in JSON format that explicitly lists the URL of each file that was written to Amazon S3.
+manifest
+
+--UNLOAD command includes a quoted string in the select statement, so the quotation marks are escaped (=\'OH\' ').
+unload ('select venuename, venuecity from venue where venuestate=\'OH\' ')
+to 's3://buck1mar/listing_bckup'
+iam_role 'arn:aws:iam::38149xxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
+
+--to overwrite existing files
+allowoverwrite
+==========================
+
+
+
+
+
+
+
 
 
 

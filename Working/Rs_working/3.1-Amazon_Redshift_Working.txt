@@ -137,10 +137,11 @@ select eventname,count(*) from event group by eventname;
 explain select eventname,count(*) from event group by eventname;
 enable explain from menu on top to look into graph.
 
-#Using compression
+# Using compression
 https://aws.amazon.com/blogs/aws/data-compression-improvements-in-amazon-redshift/
+--since venue was created earlier in previous exercises..
 
-create table venue3(
+create table venue2(
 	venueid smallint not null encode az64 ,
 	venuename varchar(100) encode bytedict,
 	venuecity varchar(30) encode bytedict,
@@ -148,36 +149,36 @@ create table venue3(
 	venueseats integer encode az64)
  sortkey(venueid,venuecity);
 
-select * from pg_table_def where tablename = 'venue3';
-
-alter table venue3 alter column venuename encode lzo;
-alter table venue3 alter column venuecity encode zstd;
-
-select * from pg_table_def where tablename = 'venue3';
+select * from pg_table_def where tablename = 'venue2';
 
 --Testing ANALYZE COMPRESSION
 Performs compression analysis and produces a report with the suggested compression encoding for the tables analyzed. 
-For each column, the report includes an estimate of the potential reduction in disk space compared to the current encoding.(if encoding was explicitly
+For each column, the report includes an estimate of the potential reduction in disk space compared to 
+the current encoding.(if encoding was explicitly
 chosen)
 
-analyze compression venue3;
+analyze compression venue2;
+
+--if changing compression
+alter table venue3 alter column venuename encode lzo;
+alter table venue3 alter column venuecity encode zstd;
 
 select count(*) from venue;
-select count(*) from venue3;
-
-select * from venue;
+select count(*) from venue2;
 
 --querying tables and using columns based on distkey,sortkey and also columns which have compressions.
 --check which compression gives a better performance.
 explain select * from venue where venueid > 25 and venuecity = 'Orlando';
-explain select * from venue3 where venueid > 25 and venuecity = 'Orlando';
+explain select * from venue2 where venueid > 25 and venuecity = 'Orlando';
 
 --look at elapsed time and explain result.
 
 --looking in system tables/view
-select * from stl_analyze_compression where tablename = 'venue3';
+select * from stl_analyze_compression where tablename = 'venue2';
 
 #understanding distkey/sortkey or both
+
+--Table created with distkey on 'venueid' column
 --create venue table if not created already.
 create table venue(
 	venueid smallint not null distkey sortkey,
@@ -188,7 +189,7 @@ create table venue(
 note** usage of distkey and sortkey
 
 --no distkey
-create table venue1(
+create table venue3(
 	venueid smallint not null ,
 	venuename varchar(100),
 	venuecity varchar(30),
@@ -198,7 +199,7 @@ create table venue1(
 
 --multiple column sortkey
 
-create table venue2(
+create table venue4(
 	venueid smallint not null ,
 	venuename varchar(100),
 	venuecity varchar(30),
@@ -206,25 +207,26 @@ create table venue2(
 	venueseats integer)
  sortkey(venueid,venuecity);
 
-select * from pg_table_def where tablename = 'venue2';
+select * from pg_table_def where tablename = 'venue4';
 --look at columns distkey and sortkey(for value other than 0)
 
-COPY dev.public.venue 
+COPY dev.public.venue3
 FROM 's3://buck1mar/venue_pipe.txt' 
-IAM_ROLE 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502' 
+IAM_ROLE 'arn:aws:iam::381xxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20xxxxxxxxxxx' 
 FORMAT AS CSV DELIMITER '|'
 REGION AS 'eu-central-1'
 
-elapsed time: 1.6s
+load same data into venue4 and check elapsed time (~xxs)
 
-load same data into venue2 and check elapsed time (~25s)
---second run : 13s
-select count(*) from venue;
-select count(*) from venue2;
+COPY dev.public.venue4
+FROM 's3://buck1mar/venue_pipe.txt' 
+IAM_ROLE 'arn:aws:iam::381xxxxxxxx:role/service-role/AmazonRedshift-CommandsAccessRole-20xxxxxxxxxxx' 
+FORMAT AS CSV DELIMITER '|'
+REGION AS 'eu-central-1'
 
-select * from venue where venueid = 7 and venuecity = 'Toronto';
+select * from venue3 where venueid = 7 and venuecity = 'Toronto';
 xxxx ms
-select * from venue2 where venueid = 7 and venuecity = 'Toronto';
+select * from venue4 where venueid = 7 and venuecity = 'Toronto';
 yyyy ms (lesser than xxxx?)
 
 --multiple runs reduces the time taken..
@@ -239,6 +241,30 @@ create table venue4(
     sortkey auto ;
 
 select * from pg_table_def where tablename = 'venue4';
+----------
+#understnding distkey
+
+create table venue5(
+	venueid smallint not null ,
+	venuename varchar(100),
+	venuecity varchar(30) distkey,
+	venuestate char(2),
+	venueseats integer)
+ sortkey(venuecity);
+
+--load data into new table
+
+--to look at row distribution per slice
+select * from stv_tbl_perm where name = 'venue5' order by rows desc;
+
+select * from venue5 where venuecity = 'New York City' order by venueid asc;
+
+--get queryid for query above
+select slice,rows from stl_scan where query = 407563;
+
+--query to reconfirm data related to one specific venuecity
+select venuecity, count(*) as count from venue5 group by 1 order by 2 desc;
+
 ----------
 #--create listing table
 create table listing(
@@ -283,16 +309,19 @@ SELECT listid, count(*) FROM listing_ajy GROUP BY listid order by listid desc;
 SELECT eventid, count(*) FROM listing_ajy GROUP BY eventid order by count desc;
 SELECT sellerid, count(*) FROM listing_ajy GROUP BY sellerid order by count desc;
 
---look at count of records based on these columns to decide on best distkey or let system decide as it did in 'listing2_ajy'
+--look at count of records based on these columns to decide on best distkey or let system decide as it did 
+in 'listing2_ajy'
 Note**
 Each node must aggregate its own rows first; then, the leader node has to aggregate the results again. 
 That's why we see two "Aggregate" steps for a query.
-To avoid large amount of data being sent to leader node over network, we can put all rows belonging to an ID or group
-by using right distkey.
-To collocate all relevant rows in a single node, use the distkey on a column which will be part of your queries or grupby queries.
+To avoid large amount of data being sent to leader node over network, we can put all rows belonging to an ID 
+or group by using right distkey.
+To collocate all relevant rows in a single node, use the distkey on a column which will be 
+part of your queries or grupby queries.
 
 Note**
-If too many rows land onto a single node, it is the so-called skew. When such a skew occurs, the total query processing 
+If too many rows land onto a single node, it is the so-called skew. When such a skew occurs, 
+the total query processing 
 time takes much longer because the performance is capped by the slowest processing node; 
 i.e., the query cannot be spread across multiple nodes. 
 In this (extreme) case, almost all the rows were processed by a single node. 
@@ -319,44 +348,6 @@ Select diststyle, skew_rows from svv_table_info where "table" = 'listing2';
 
 --test querying on bth tables..
 ---------
---Unload data to S3
-unload ('select * from listing') to 's3://buck1mar/listing_bckup'
-iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
-json
-
-Note** creates multiple files here with prefix as listing_backup..
-Amazon Redshift splits the results of a select statement across a set of files, one or more files per node slice, 
-to simplify parallel reloading of the data. Alternatively, you can specify that UNLOAD should write the results serially to 
-one or more files by adding the PARALLEL OFF option. You can limit the size of the files in Amazon S3 by specifying the MAXFILESIZE parameter. 
-UNLOAD automatically encrypts data files using Amazon S3 server-side encryption (SSE-S3).
-
-By default, UNLOAD writes data in parallel to multiple files, according to the number of slices in the cluster
-
-unload ('select * from listing') to 's3://buck1mar/listing_bckup2'
-iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
-parallel off
-
-other options:
---to divide data into equal size files
-maxfilesize xx mb;
-
---to create a manifest file that lists the unload files
-The manifest is a text file in JSON format that explicitly lists the URL of each file that was written to Amazon S3.
-manifest
-
---UNLOAD command includes a quoted string in the select statement, so the quotation marks are escaped (=\'OH\' ').
-unload ('select venuename, venuecity from venue where venuestate=\'OH\' ')
-to 's3://buck1mar/listing_bckup'
-iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240313T180502'
-
---to overwrite existing files
-allowoverwrite
-==========================
-
-
-
-
-
 
 
 
