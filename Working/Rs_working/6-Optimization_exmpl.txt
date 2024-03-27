@@ -212,53 +212,94 @@ Modify workload queues >
 --shows default queues
 --Add queue <say 3 times to create 3 different queues>
 1st:
-BI_Wrk
+BI_Wrk_ac
 Concurrency scaling mode: auto
 Query priority: Highest
-User roles: %tableau%
-User groups: %tableau%
+User roles: %tab% or blank
+User groups: verigrp or blank
 Add rule form template/custom rule:
-rulimp1,scan row count(rows), >, 30000, Actions: log
+rulimp1,[Scan row count (rows) < 50000] Actions: log/change query priority To Lowest
 
-2nd: Batch_Wrk
+2nd: Batch_Wrk_ac
 Concurrency scaling mode: auto
 Query priority: High
 User roles: None
 User groups: None
 Add rule form template/custom rule:
-rulimp2,....scan row count(rows), >, 10000, Actions: log
-rulimp3,.....rows joined > 1000, Action : change priority > highest
+rulimp2,....[Return row count (rows) > 50000] Actions: change query priority To Highest
 
-Default queue> lowest..
+Default queue> edit more if needed
 
 --to apply new paramter group for cluster > click on cluster > go to properties 
 >edit parameter group > let changes be applied and if required reboot.
 
+--as awsuser
 from editor> (unselect limit 100 rows)
-select * from listing order by sellerid desc;
+create table listing_xx or use an existing table
+	select * from listing_xx order by sellerid desc;
+	select count(*) from listing_xx ;
+	select * from listing_xx order by eventid desc limit 5;
+
+--using unload
+unload ('select * from listing_aj order by listid desc') to 's3://buckt1mar-aj/listing_bckup_2703aj_'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240325T092034'
+json
+parallel off
 
 from query monitoring get the query id
 
 --look into STL_WLM_QUERY
 Contains a record of each attempted execution of a query in a service class handled by WLM.
-select * from STL_WLM_QUERY where query = '203245';
+select * from stl_wlm_query where query = 203388;
+select * from stl_wlm_query where query = 203376;
+--service_class_name: Batch_Wrk_ac
+--query_priority: High
 
---to extend create a dedicated user and group, create schema, grant permissions and then create queue for this usergroup
+--to extend create a dedicated user and group, create schema, grant permissions and 
+then create queue for this usergroup
 
-create group testgrp;
+create group verigrp;
+create user veriusr in group verigrp password 'Abcd$1234';
+create schema testschema_forveri;
+alter schema testschema_forveri owner to "veriusr";
 
-select* from pg_group;
-
-create user testusr in group testgrp password 'Abcd$1234';
-
-create schema testschema_forusr;
-
-alter schema testschema_forusr owner to "testusr";
+--login as veriusr
+select CURRENT_USER;
 
 SELECT usename, groname 
 FROM pg_user, pg_group
 WHERE (pg_user.usesysid = ANY(pg_group.grolist))
 AND pg_group.groname in (SELECT DISTINCT pg_group.groname from pg_group);
+
+create table listing_veri(
+	listid integer not null ,
+	sellerid integer not null,
+	eventid integer not null distkey,
+	dateid smallint not null  sortkey,
+	numtickets smallint not null,
+	priceperticket decimal(8,2),
+	totalprice decimal(8,2),
+	listtime timestamp);
+
+COPY dev.public.listing_veri FROM 's3://buckt1mar-aj/listings_pipe.txt' 
+IAM_ROLE 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240325T092034' 
+FORMAT AS CSV DELIMITER '|' REGION AS 'eu-central-1';
+
+unload ('select * from listing_veri order by listid desc') to 's3://buckt1mar-aj/listing_bckup_2703veri_'
+iam_role 'arn:aws:iam::381492072383:role/service-role/AmazonRedshift-CommandsAccessRole-20240325T092034'
+json
+parallel off;
+
+
+select * from listing_veri where listid > 1 limit 60000;
+
+select * from stl_wlm_query where query = 204722;
+select * from stl_wlm_query where query = 204756;
+
+select * from stl_scan where query = 204722;
+
+
+
 
 
 
