@@ -108,6 +108,15 @@ select * from svl_statementtext;
 select * from stl_query;
 select * from stl_scan;
 select * from stl_commit_stats;
+
+for example: before and after vacuum process (when updates/deletes/load/insert were done)
+select * from svv_table_info; 
+--pct_used,unsorted,stats_off,tbl_rows,skew_rows,estimated_visible_rows,vacuum_sort_benefit
+select * from stv_blocklist;
+--unsorted, slice, col, tbl, num_values
+select * from stv_tbl_perm;
+--slice, rows, name,sorted_rows
+
 ------------
 --Run ANALYZE based on the alerts recorded in stl_explain & stl_alert_event_log.
 ---------------
