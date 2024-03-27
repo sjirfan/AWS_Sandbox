@@ -89,7 +89,6 @@ The blocking_pid column shows the process ID of the session that's holding the l
 Other information:
 select * from stl_vacuum;
 select * from svv_vacuum_progress;
-
 select * from SVV_VACUUM_SUMMARY;
 select * from sys_vacuum_history;
 
@@ -98,6 +97,18 @@ vacuum sort only listing_1_ajy;
 select * from svv_diskusage  where tbl = 119886;
 select * from stv_blocklist where tbl = 119886;
 
+Tables to look into when working on above mentioned or similar activity:
+select * from svv_table_info;
+select * from stv_blocklist;
+select * from pg_statistic_indicator;
+select * from stv_tbl_perm ;
+select * from stl_delete;
+select * from svv_transactions;
+select * from svl_statementtext;
+select * from stl_query;
+select * from stl_scan;
+select * from stl_commit_stats;
+------------
 --Run ANALYZE based on the alerts recorded in stl_explain & stl_alert_event_log.
 ---------------
 #Deep copy
