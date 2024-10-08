@@ -1,3 +1,4 @@
+Testing Glue
 --Create a bucket in s3 >Load sample data in a S3 bucket : newtick
 --Create another bucket for output : newtickout
 

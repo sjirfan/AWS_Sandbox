@@ -1,4 +1,4 @@
-
+Delivery or data stream.
 
 Working with Kinesis Firehose
 ------------------------

@@ -1,5 +1,5 @@
-    Amazon DynamoDB
-    -----------
+Amazon DynamoDB
+----------------------------------
 Services> DynamoDB > Select region 
                    	> create table
                           table name : usersTest

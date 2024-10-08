@@ -1,4 +1,4 @@
-
+Streaming..
 Kinesis Data Stream
 ---------------
 reference:https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html

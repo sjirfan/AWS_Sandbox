@@ -1,4 +1,5 @@
-
+Redshift data warehouse
+-----------------
 Instructions:
 
 Redshift setup and usage:
