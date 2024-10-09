@@ -45,4 +45,8 @@ Make a note of 12 digit account ID
 774305570628
 arn:aws:organizations::381492072383:account/o-elnv66cbcx/774305570628
 ============
+AWS Account Management trusted access is not enabled. Enable it to view this content
+
+Services > All services > AWS Account Management
+Enable trusted access for AWS Account Management
 
