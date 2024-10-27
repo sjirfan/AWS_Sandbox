@@ -1,4 +1,4 @@
-
+--sample pipeline (part of a bigger project)
 Kinesis Data Stream ---KInesis firehose ----s3(trigger lambda func1...write success info to 
 sns topic<------sqs subscribed)
 

@@ -1,0 +1,19 @@
+Switching to an IAM role through the CLI
+When using the CLI we can configure an AWS profile to assume a role. To be able to use AWS profiles, we will need AWS CLI installed with the default profile configured. Please follow this link to configure if it isn’t already configured for you.
+
+Using profiles
+
+Open the AWS config file, which is used for configuring AWS profiles.
+This file can be found at ~/.aws/config path in macOS or Linux and at the C:\Users\USERNAME\.aws\config path in Windows.
+Create a new profile with the name rdsadmin.
+When creating a profile for a role, two keys are required
+– Role ARN: It can be found on the role details page
+– Source profile: AWS CLI uses the credentials from this profile to assume the role. We will choose the default profile.
+[profile rdsadmin]
+   role_arn = arn:aws:iam::123456789012:role/AWSIAMRoleForRDS
+   source_profile = default
+Once the config has been updated, we can use the --profile flag with every CLI command to use the assumed role. For instance, we can use the following command to describe all database instances using the assumed rdsadmin role.
+aws rds describe-db-instances --profile rdsadmin
+To stop using a role (Using profiles)
+
+To stop using the assumed role and return to the original credentials, run the commands without the --profile flag. The AWS CLI defaults to using the credentials from your default profile if the --profile flag is not specified.

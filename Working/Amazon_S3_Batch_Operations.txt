@@ -1,26 +1,73 @@
+#performing s3 batch ops
 
 Amazon S3 Batch Job
 -----------------
 For Large scale operations for Amazon s3 objects
 -Create a bucket and upload some data into it
+	Say: tstusraj1buck1, Say: tickit files
+-Create another bucket which will be our destination bucket
+        Say: tstusraj1buck1-dest
+
 -Within your bucket, get into management tab and then inventory
+[if needed, add permissions, when no default full access or read only access
+s3:GetLifecycleConfiguration
+s3:GetReplicationConfiguration
+s3:GetInventoryConfiguration
+s3:PutInventoryConfiguration
+s3:GetBucketAcl
+s3:GetBucketOwnershipControls
+s3:GetBucketPolicy
+s3:GetBucketPolicyStatus
+s3:GetAccountPublicAccessBlock
+s3:PutBucketPolicy
+
+--for s3 batch operations
+s3:ListJobs
+s3:DescribeJob
+s3:CreateJob
+s3:UpdateJobStatus
+s3:UpdateJobPriority
+s3:GetBucketVersioning
+s3:GetBucketTagging
+s3:GetIntelligentTieringConfiguration
+s3:GetBucketLogging
+& iam:PassRole
+
+--additionals if only needed
+
+s3:GetBucketNotification
+s3:GetAccelerateConfiguration
+s3:GetBucketObjectLockConfiguration
+s3:GetBucketRequestPayment
+s3:GetBucketWebsite
+s3:GetJobTagging
+cloudtrail:DescribeTrails
+]
+
 -create an inventory ( which will be used by batch operations to move our files)
- :name
- :destination bucket: choose a bucket
+ :name > myfileinventoryaj
+ :destination bucket: choose a bucket >tstusraj1buck1-dest
  :Output format: csv (s3 can use this format without modifying)
- : Object versions: current
+ :Object versions: current
  -->save
 Note** Shows - Inventory successfully saved
              - Bucket policy created
 
-Now get into bucket where inventory was created and get the 'manifest.json' file.
+Now get into bucket where inventory was created and get the 'manifest.json' file. [may take time]
 
 Working with Batch operations:
+
+-create manifest : choose your path of manifest.json or 
+ use a provided manifest file say 'tickitdata.csv' & upload it to your source bucket.
+ Note** validate if manifest has right bucket name and list of files
 -create job
--create manifest : choose your path of manifest.json
+-choose manifest file 
+ Manifest format: CSV
+ choose path: s3://tstusraj1buck1/tickitdata.csv
 -<object version id for versioning enabled (optional)>
--Choose operation: PUT  copy
--choose output bucket
+-Choose operation: Copy
+-choose output bucket > tstusraj1buck1-dest
+ [if needed we may need to check permissions ]
 -storage class: standard
 -encryption: none
 -ACL: as it is
@@ -29,10 +76,10 @@ Working with Batch operations:
 -Description: as it is
 --rest all as it is
 --choose destination for 'path to completion report destination'
---permissions (choose a role/create a role to access s3 ) [s3forBatchops]
+--permissions (choose a role/create a role to access s3 ) [s3forBatchops]--Note** this role should have permissions to work with S3
 ---Review
 
 #or create custom manifest in csv format and use it
-refer to 'custom-manifest.csv' file
+refer to 'tickitdata.csv' file
 
 

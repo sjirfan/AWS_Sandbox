@@ -1,3 +1,4 @@
+#VPCs
 Connect to console
 Services > VPCs > If no VPCs > Create default VPC
 Check 

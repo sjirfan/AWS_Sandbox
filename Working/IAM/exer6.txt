@@ -1,0 +1,121 @@
+--admin users
+meadmin -MyAdminGrp
+iladmin
+kradmin
+stadmin
+zgadmin
+
+--user group [has policyvalidationaj,s3polaccessaj policies attached]
+tstusraj1 -UsrGrp
+
+Login as user
+Additional permissions added to 'policyvalidationaj'
+
+iam:GetAccountSummary
+iam:ListAccountAliases
+iam:ListMFADevices
+iam:ListAccessKeys
+iam:ListGroupsForUser
+iam:GetLoginProfile
+iam:ListSigningCertificates
+iam:ListAttachedGroupPolicies
+access-analyzer:ListPolicyGenerations
+
+--additionals if needed can be added 
+iam:ListUserTags
+iam:GenerateServiceLastAccessedDetails
+
+--Working with EC2
+Option 1:
+Attach AmazonEC2FullAccess to user's group
+
+Now access EC2 service
+--can you access VPC (click on default VPC)
+--can you access Security groups (click on security groups)
+--can you access Key Pairs (click on Key Pairs)
+  --create one and download the files 
+		(mykeypair) [mykeypair.pem]
+                            [to use it from external client like putty, convert to .ppk file using puttygen]
+                            keycomment = hdu (before saving as privatekey)
+
+Launch instance
+
+Name: instance1
+select ubuntu-24.04(64 bit-x86)
+instance type: t2.micro
+keypair: mykeypair
+network settings: default
+   we can select existing security group: default 
+but here
+   we will create security group which allows
+
+Allow SSH traffic from My IP 
+Allow HTTPS traffic from the internet
+To set up an endpoint, for example when creating a web server
+Allow HTTP traffic from the internet
+To set up an endpoint, for example when creating a web server
+
+storage: 30gb, gp3
+
+Use connect to instance> 
+--edit security group to allow ec2 connect on port 22
+--add IAM policy to use EC2 connect and attach it to your group
+
+-----------
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": "ec2-instance-connect:SendSSHPublicKey",
+			"Resource": [
+				"arn:aws:ec2:eu-central-1:381492072383:instance/i-08840xxxx09f985d1"
+			],
+			"Condition": {
+				"StringEquals": {
+					"ec2:osuser": "ubuntu"
+				}
+			}
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"ec2:DescribeInstances",
+				"ec2:DescribeVpcs"
+			],
+			"Resource": "*"
+		}
+	]
+}
+-----------
+
+for your user create accesskeys, if no permissions then add following to your policy
+CreateAccessKey
+DeletAccessKey
+
+create access key
+download .csv file
+
+now from terminal type
+aws configure 
+AWS Access Key ID [None]: 
+AWS Secret Access Key [None]: 
+Default region name [None]: eu-central-1
+Default output format [None]: json
+
+now we can use AWSCLI from this instance..
+
+----------------------
+
+
+
+
+
+
+
+
+
+
+
+
+

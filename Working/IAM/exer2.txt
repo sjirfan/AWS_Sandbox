@@ -1,0 +1,167 @@
+AWS IAM
+-------
+--to confirm if you are using root account, top right corner look in dropdown for your account and check if 
+it shows 'switch accounts', if not its root.
+
+Done
+--login nto console
+--IAM
+--Look in IAM resources
+  <cleanup if needed>
+
+--Create Group > MyAdminGrp
+--Create User > meadmin
+  --Provide user access to the AWS Management Console - optional
+
+Are you providing console access to a person?
+User type
+>Specify a user in Identity Center - Recommended
+We recommend that you use Identity Center to provide console access to a person. 
+With Identity Center, you can centrally manage user access to their AWS accounts and cloud applications.
+
+>I want to create an IAM user (selected)
+We recommend that you create IAM users only if you need to enable programmatic access through access keys, 
+service-specific credentials for AWS CodeCommit or Amazon Keyspaces, or a backup credential for emergency account access.
+
+Custom password
+>next>
+--add user to group(MyAdminGrp) create user
+https://381492072383.signin.aws.amazon.com/console
+3xxxxxxx3
+username:meadmin
+pswd:
+<optionally download csv file with credentials>
+
+--At a group level
+--permissions > Add permissions > attach policies > AdministratorAccess
+
+Test by loggin into this account
+----------------
+enable MFA for meadmin
+Device name: miphone
+MFA device: Passkey or security key > provide pin of say phone > create a new pin
+other options: Authenticator app
+               Hardware TOTP token
+Logout and login, see if asks you to use passkey (which was saved earlier) or need to be in keyed in.
+
+----------------
+Security credentials> create access key
+Use access keys to send programmatic calls to AWS from the AWS CLI, AWS Tools for PowerShell, AWS 
+SDKs, or direct AWS API calls. You can have a maximum of two access keys (active or inactive) at a time.
+
+Use case: CLI
+Description tag value: cliaccess
+Download .csv file
+----------------
+
+--Test access to aws account from CLI
+--If CLI not setup, refer AWS CLI setup document.
+
+----------------
+in AWS from console > s3> create a bucket > testbuckaj-1 (with all details defaults set)
+from CLI
+C:\Windows\system32>aws s3 ls
+2024-10-06 07:21:53 testbuckaj-1
+
+C:\Windows\system32>aws s3 help
+
+C:\Windows\system32>aws s3api create-bucket --bucket testbuckaj-1-fromcli --region eu-central-1  
+--create-bucket-configuration LocationConstraint=eu-central-1
+
+--shows result
+{
+    "Location": "http://testbuckaj-1-fromcli.s3.amazonaws.com/"
+}
+
+--listing buckets
+C:\Windows\system32>aws s3api list-buckets
+{
+    "Buckets": [
+        {
+            "Name": "testbuckaj-1",
+            "CreationDate": "2024-10-06T05:21:53+00:00"
+        },
+        {
+            "Name": "testbuckaj-1-fromcli",
+            "CreationDate": "2024-10-06T05:29:04+00:00"
+        }
+    ],
+    "Owner": {
+        "ID": "0801e3686d5949a6f1d7811942e07ee7ceda5676b8b97d1e0f7f80baea0b3c4d"
+    }
+}
+
+--cleanup and check
+C:\Windows\system32>aws s3api delete-bucket --bucket testbuckaj-1-fromcli
+
+C:\Windows\system32>aws s3api list-buckets
+{
+    "Buckets": [
+        {
+            "Name": "testbuckaj-1",
+            "CreationDate": "2024-10-06T05:21:53+00:00"
+        }
+    ],
+    "Owner": {
+        "ID": "0801e3686d5949a6f1d7811942e07ee7ceda5676b8b97d1e0f7f80baea0b3c4d"
+    }
+}
+
+-----------------------
+as admin user create new user in new group with admin access and test the above as done for 'meadmin'
+--User groups
+Group name: newgrpaj (enable AdministratorAccess while creating group)
+users: userajadmin
+--Provide user access to the AWS Management Console - optional
+--create an IAM user
+--custom pswd: Summer@2024
+add user to group: newgrpaj
+Download .csv file
+
+>Test login access > IAM
+
+>enable MFA
+--saving passkey for aws.amazon.com  in 'Google Password Manager' as done earlier or
+  save it using mobile device (scan qr code and follow instructions)
+>create access keys
+    cliaccess-useraj
+>test usage from cli
+
+C:\Windows\system32>aws s3api create-bucket --bucket userajbuck1 --region eu-central-1 --create-bucket-configuration LocationConstraint=eu-central-1
+
+C:\Windows\system32>aws s3api list-buckets
+{
+    "Buckets": [
+        {
+            "Name": "userajbuck1",
+            "CreationDate": "2024-10-06T05:51:12+00:00"
+        }
+    ],
+    "Owner": {
+        "ID": "0801e3686d5949a6f1d7811942e07ee7ceda5676b8b97d1e0f7f80baea0b3c4d"
+    }
+}
+
+
+C:\Windows\system32>aws s3api delete-bucket --bucket userajbuck1
+
+----------------------
+Delete this new group and user created.
+newgrpaj
+userajadmin (notice** user can exist without a group)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

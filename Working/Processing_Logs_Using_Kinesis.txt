@@ -1,5 +1,4 @@
-
-Processing logs using Kinesis:
+#Processing logs using Kinesis:
 
 Refer presentation for more info:
 ====================================

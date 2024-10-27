@@ -1,0 +1,286 @@
+#logged in as meadmin
+
+--check if your userid has any permissions
+note** we already added AdministratorAccess (under Policy name-which is aws managed job function) to group which contains your userid.
+
+--working with policies
+
+--create group (tstgrpaj)--no policies attached, no user added
+--create new user (tstusraj)--provide console access | create IAM user | custom password | add to group
+
+
+login as this user> tstusraj
+
+--check if any policies, permissions exist (which should not)
+You don't have permission to iam:GetAccountSummary. To request access, copy the following text and send it to your AWS administrator. 
+User: arn:aws:iam::3xxxxxxx3:user/tstusraj
+Action: iam:GetAccountSummary
+Context: no identity-based policy allows the action
+
+You don't have permission to iam:ListMFADevices. To request access, copy the following text and send it to your AWS administrator.
+User: arn:aws:iam::3xxxxxxx3:user/tstusraj
+Action: iam:ListMFADevices
+Context: no identity-based policy allows the action
+
+You don't have permission to iam:ListAccountAliases. To request access, copy the following text and send it to your AWS administrator
+User: arn:aws:iam::3xxxxxxx3:user/tstusraj
+Action: iam:ListAccountAliases
+Context: no identity-based policy allows the action
+
+similarly..
+You don't have permission to iam:ListAccessKeys. 
+You don't have permission to iam:GetAccountSummary. 
+You don't have permission to iam:ListPolicies
+You don't have permission to iam:ListRoles. 
+You don't have permission to iam:ListGroups. 
+You don't have permission to iam:ListOpenIDConnectProviders.
+You don't have permission to iam:GetAccountPasswordPolicy. 
+
+Say we try creating a policy using JSON fr this user
+--Create policy
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "allowaccess",
+			"Effect": "Allow",
+			"Action": "iam:ListGroups",
+			"Resource": "*"
+		}
+	]
+}
+
+User: arn:aws:iam::381492072383:user/tstusraj is not authorized to perform: access-analyzer:ValidatePolicy 
+on resource: arn:aws:access-analyzer:us-east-1:381492072383:*
+
+so let's take this -- arn:aws:iam::381492072383:user/tstusraj
+
+So login back as your admin user [meadmin]
+--select user
+Add permissions
+  -Add permissions
+  -Create inline policy
+Create inline policy > visual > access analyzer
+All list actions
+All read actions
+
+Resources: we can specify 'All' or 'Specific'
+Let's choose Specific ARN(s)
+Any region
+Any analyzer name
+Resource ARN
+<Add ARNs>
+
+Any region
+Any analyzer name
+Any rule name
+ <next>
+
+Policyname: myusrpol1
+<create>
+
+--Now test this for your user by creating new policy
+login as tstusraj
+
+policies > add policy > json
+
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "allowaccess",
+			"Effect": "Allow",
+			"Action": "iam:ListGroups",
+			"Resource": "*"
+		}
+	]
+}
+
+policyname: usrajpol1
+Failed to create policy usrajpol1.
+User: arn:aws:iam::381492072383:user/tstusraj is not authorized to perform: iam:CreatePolicy on 
+resource: policy usrajpol1 because no identity-based policy allows the iam:CreatePolicy action
+
+Thus login as 'meadmin' and edit policy myusrpol1
+to allow 'iam:CreatePolicy'
+
+--once done, login as user and create a new policy 'usrajpol1'
+
+--------------------
+Note**You don't have permission to iam:ListPolicies.
+Task: add permissions to ListPolicies & GetPolicies
+--------------------
+Hint:
+ListPolicies
+GetPolicy
+
+--check if policies show up.
+in search type <usr..>
+
+Note** if clicking on policy shows: You don't have permission to > iam:GetPolicyVersion
+
+add accordingly
+iam:GetPolicyVersion
+iam:CreatePolicyVersion
+
+
+Login as user and test/check..
+
+--check if you can List Groups, if not
+check error and edit
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "allowaccess",
+			"Effect": "Allow",
+			"Action": "iam:ListGroups",
+			"Resource": "arn:aws:iam::381492072383:group/"
+		}
+	]
+}
+
+This policy does not grant any permissions. To grant access, policies must have an action that has an applicable resource or condition.
+
+if trying to edit policy and number of versions exceed threshold..
+--login as meadmin again and add List> iam:ListPolicyVersions
+ &  permission management> iam:DeletePolicyVersion & iam:Deletepolicy
+
+Now login as user again and delete previous 4 versions
+
+Now edit policy (latest version) and select all List actions
+Resources >
+select : All
+
+<save changes>
+
+check if roles/groups/users/policies can be listed.
+if not, edit policy again and for resources > choose 'any in this account'
+
+So we need to grant these permissions to this user frm admin account.
+
+Login into meadmin
+
+delete usrajpol1
+
+edit policy created at admin level.(myusrpol1)
+>select all List actions and for resources >all in this account
+
+If error:
+Your policy exceeds the non-whitespace character limit of 2048.
+The character limit includes the total character count of all inline policies for tstusraj.
+
+Use the JSON editor for more information about the character count.
+
+delete List options for tags, devices, ssh etc..
+
+and save.
+
+Now login as user(tstusraj) and test..
+======================================================
+#allowing user to use existing policies
+Policy attached to user needs to hve permissions to perform actions or allow user to attach/detach policies for user,role,group.
+
+Login as meadmin and edit 'myusrpol1' now to allow user to 
+attach/detatch - user,role,group policy
+
+Login as tstusraj..
+Users > add permissions > Attach policies directly > AmazonS3FullAccess
+
+
+Test S3 access
+-create bucket
+-upload data
+-delete bucket
+
+However in real, we may nt have attach policy permissions,thus we can create an inline policy and choose s3 operations
+create policy > s3polaccess1 > visual > under List and Write - select options to list/create/delete
+
+Now remove previously attached AmazonS3FullAccess
+& add this customer managed new policy to user..
+
+Test s3 access
+
+Successfully created bucket "usrajbuck1new"
+You need the s3:PutEncryptionConfiguration permission to apply Default Encryption on this bucket. 
+After you or your AWS admin has updated your IAM permissions to allow s3:PutEncryptionConfiguration.
+
+#Task:
+resolve above error.
+
+-----------------------------
+#Assuming role
+create new user: tstusraj2
+Note** no group to which user belongs to, no policies/permissions added as of now.
+
+Roles> create role > Select trusted entity : 'AWS account'
+This account (but we can also let role be used by another AWS account) > add permissions
+--search for s3 and let's add 'AmazonS3ReadOnlyAccess'
+role name: s3-personalized-access
+
+<create>
+
+To assume this role, we can assign this to a user (in our case: tstusraj2)
+users> tstusraj2 > add permissions > create inline policy
+
+If using visual:
+Service: STS
+Actions: Write> AssumeRole
+
+get the ARN for the role
+add ARN : 
+
+policy name: s3-access-pol
+
+<create>
+
+for our role,note**: https://signin.aws.amazon.com/switchrole?roleName=s3-personalized-access&account=381492072383
+
+Now login as user> switch role > provide account number and role name > switch role
+
+--check s3 access
+--create bucket from cli using admin user
+--from console where you have switched role, check s3 access..
+
+
+--similarly we can create roles for one service to assume role and use its permissions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

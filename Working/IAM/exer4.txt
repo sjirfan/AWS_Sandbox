@@ -1,0 +1,52 @@
+AWS Organization
+------------
+AWS organization helps us in creating a different operational unit(business unit)
+so that we can create different isolated accounts [test/QA/dev/prod etc]
+
+search > AWS organization
+
+create an organization 
+The accounts listed below are members of your organization. 
+The organization's management account is responsible for paying the bills for all accounts in the organization. 
+
+shows >
+Root
+  >abc (if Operational Unit(OU)created)
+  >xyz(management account : account used to do signup)
+
+Select root> actions > create new (organizational unit) > dev-OU
+                                                        > test-OU
+
+Now select test-OU > to create accounts within it > add aws account
+--so we can create new account
+or add existing account (we can add our management acct or any sub accounts created within)
+
+Let's click on create new account
+
+AWS account-name: test-account
+email add: info_con@controw.com
+IAM role name: OrganizationAccountAccessRole (default)
+
+<refresh the page and check>
+
+if newly account created,doesnot showup in selected OU (for some reason),
+move it ..
+
+This account will get an email with aws services..
+
+Now we can login using this account: info_con@controw.com as 'root' account
+and for pswd we need to reset it.
+remember all these accounts within OU are still connected to main management account.
+
+Now we have one more root account, which belongs to my BU/OU in my organization.
+
+Also click and check organization details by search > aws organization
+Make a note of 12 digit account ID
+774305570628
+arn:aws:organizations::381492072383:account/o-elnv66cbcx/774305570628
+============
+AWS Account Management trusted access is not enabled. Enable it to view this content
+
+Services > All services > AWS Account Management
+Enable trusted access for AWS Account Management
+
