@@ -1,6 +1,0 @@
-{
-  "Format": "Report_CSV_20180820",
-  "ReportCreationDate": "2021-04-29T11:20:05.410Z",
-  "Results": [],
-  "ReportSchema": "Bucket, Key, VersionId, TaskStatus, ErrorCode, HTTPStatusCode, ResultMessage"
-}
