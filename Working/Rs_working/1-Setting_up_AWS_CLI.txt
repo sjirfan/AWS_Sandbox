@@ -8,6 +8,7 @@ To update your current installation of AWS CLI version 2 on Windows,
 download a new installer each time you update to overwrite previous versions. 
 
 After running the installer..
+Click start>run>cmd
 
 ======
 
@@ -17,6 +18,7 @@ aws-cli/2.15.28 Python/3.11.8 Windows/10 exe/AMD64 prompt/off
 C:\>aws configure
 AWS Access Key ID [None]: provide your key id (found in AWS console > IAM > users > select your user id
 AWS Secret Access Key [None]: can be found with ur key id or by downloading the csv file
+If you do not have an access key, create one, please note that this can be viewed or downloaded only once. However a new access can be created later. 
 Default region name [None]: provide a region
 Default output format [None]: json
 
